@@ -1,10 +1,12 @@
+import RegistrationForm from "@/components/RegistrationForm";
+
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <h1 className="text-5xl font-bold text-foreground">
-        Hello World! 👋
-      </h1>
-    </div>
+    <main className="min-h-screen bg-background flex items-center justify-center px-4 py-8 md:py-12">
+      <div className="w-full">
+        <RegistrationForm />
+      </div>
+    </main>
   );
 };
 
