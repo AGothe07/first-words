@@ -1,0 +1,65 @@
+import { useFinance } from "@/contexts/FinanceContext";
+import { Card, CardContent } from "@/components/ui/card";
+import { TrendingUp, TrendingDown, DollarSign, Wallet, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { useMemo } from "react";
+import { subMonths, parseISO, isWithinInterval, startOfMonth, endOfMonth } from "date-fns";
+
+export function KPICards() {
+  const { crossFilteredTransactions } = useFinance();
+
+  const stats = useMemo(() => {
+    const expenses = crossFilteredTransactions.filter(t => t.type === "expense");
+    const incomes = crossFilteredTransactions.filter(t => t.type === "income");
+    const totalExpense = expenses.reduce((s, t) => s + t.amount, 0);
+    const totalIncome = incomes.reduce((s, t) => s + t.amount, 0);
+    const balance = totalIncome - totalExpense;
+
+    const now = new Date();
+    const prevStart = startOfMonth(subMonths(now, 1));
+    const prevEnd = endOfMonth(subMonths(now, 1));
+    const prevExpenses = expenses.filter(t => {
+      try { return isWithinInterval(parseISO(t.date), { start: prevStart, end: prevEnd }); } catch { return false; }
+    }).reduce((s, t) => s + t.amount, 0);
+
+    const days = new Set(crossFilteredTransactions.map(t => t.date)).size || 1;
+    const avgDaily = totalExpense / days;
+    const variation = prevExpenses > 0 ? ((totalExpense - prevExpenses) / prevExpenses) * 100 : 0;
+
+    return { totalExpense, totalIncome, balance, avgDaily, variation };
+  }, [crossFilteredTransactions]);
+
+  const fmt = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const cards = [
+    { label: "Total Receitas", value: fmt(stats.totalIncome), icon: TrendingUp, color: "text-primary", bg: "bg-secondary" },
+    { label: "Total Gastos", value: fmt(stats.totalExpense), icon: TrendingDown, color: "text-destructive", bg: "bg-destructive/10" },
+    { label: "Saldo", value: fmt(stats.balance), icon: Wallet, color: stats.balance >= 0 ? "text-primary" : "text-destructive", bg: stats.balance >= 0 ? "bg-secondary" : "bg-destructive/10" },
+    { label: "Média Diária", value: fmt(stats.avgDaily), icon: DollarSign, color: "text-primary", bg: "bg-secondary" },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {cards.map(c => (
+        <Card key={c.label} className="border-border shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-muted-foreground">{c.label}</span>
+              <div className={`p-2 rounded-lg ${c.bg}`}>
+                <c.icon className={`h-4 w-4 ${c.color}`} />
+              </div>
+            </div>
+            <p className="text-xl font-bold tracking-tight">{c.value}</p>
+            {c.label === "Total Gastos" && stats.variation !== 0 && (
+              <div className="flex items-center gap-1 mt-1">
+                {stats.variation > 0 ? <ArrowUpRight className="h-3 w-3 text-destructive" /> : <ArrowDownRight className="h-3 w-3 text-primary" />}
+                <span className={`text-xs ${stats.variation > 0 ? "text-destructive" : "text-primary"}`}>
+                  {Math.abs(stats.variation).toFixed(1)}% vs mês anterior
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
