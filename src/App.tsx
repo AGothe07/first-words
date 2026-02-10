@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { FinanceProvider } from "@/contexts/FinanceContext";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
-import TablePage from "./pages/TablePage";
+
 import CategoriesPage from "./pages/CategoriesPage";
 import PersonsManagePage from "./pages/PersonsManagePage";
 import ImportPage from "./pages/ImportPage";
@@ -44,7 +44,7 @@ function AppRoutes() {
       <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
       <Route path="/timeline" element={<Navigate to="/" replace />} />
       <Route path="/persons" element={<Navigate to="/" replace />} />
-      <Route path="/table" element={<ProtectedRoute><TablePage /></ProtectedRoute>} />
+      <Route path="/table" element={<Navigate to="/transactions" replace />} />
       <Route path="/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
       <Route path="/persons-manage" element={<ProtectedRoute><PersonsManagePage /></ProtectedRoute>} />
       <Route path="/import" element={<ProtectedRoute><ImportPage /></ProtectedRoute>} />
