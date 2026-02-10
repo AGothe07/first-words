@@ -6,6 +6,7 @@ import { SpendingTimelineChart } from "@/components/dashboard/SpendingTimelineCh
 import { PersonChart } from "@/components/dashboard/PersonChart";
 import { InsightsPanel } from "@/components/dashboard/InsightsPanel";
 import { CategoryRankingChart } from "@/components/dashboard/CategoryRankingChart";
+import { SubcategoryChart } from "@/components/dashboard/SubcategoryChart";
 import { CumulativeBalanceChart } from "@/components/dashboard/CumulativeBalanceChart";
 import { PersonTimelineChart } from "@/components/dashboard/PersonTimelineChart";
 import { WeekdayChart } from "@/components/dashboard/WeekdayChart";
@@ -22,6 +23,7 @@ function ActiveSelectionBanner() {
     category: "Categoria",
     person: "Pessoa",
     type: "Tipo",
+    subcategory: "Subcategoria",
   };
 
   return (
@@ -66,6 +68,11 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <CategoryChart />
         <CategoryRankingChart />
+      </div>
+
+      {/* Subcategorias */}
+      <div className="mb-4">
+        <SubcategoryChart />
       </div>
 
       {/* Pessoas */}

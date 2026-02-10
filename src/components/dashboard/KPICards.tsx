@@ -22,7 +22,7 @@ export function KPICards() {
     }).reduce((s, t) => s + t.amount, 0);
 
     const days = new Set(crossFilteredTransactions.map(t => t.date)).size || 1;
-    const avgDaily = totalExpense / days;
+    const avgDaily = (totalIncome - totalExpense) / days;
     const variation = prevExpenses > 0 ? ((totalExpense - prevExpenses) / prevExpenses) * 100 : 0;
 
     return { totalExpense, totalIncome, balance, avgDaily, variation };
@@ -34,7 +34,7 @@ export function KPICards() {
     { label: "Total Receitas", value: fmt(stats.totalIncome), icon: TrendingUp, color: "text-primary", bg: "bg-secondary" },
     { label: "Total Gastos", value: fmt(stats.totalExpense), icon: TrendingDown, color: "text-destructive", bg: "bg-destructive/10" },
     { label: "Saldo", value: fmt(stats.balance), icon: Wallet, color: stats.balance >= 0 ? "text-primary" : "text-destructive", bg: stats.balance >= 0 ? "bg-secondary" : "bg-destructive/10" },
-    { label: "Média Diária", value: fmt(stats.avgDaily), icon: DollarSign, color: "text-primary", bg: "bg-secondary" },
+    { label: "Média Diária", value: fmt(stats.avgDaily), icon: DollarSign, color: stats.avgDaily >= 0 ? "text-primary" : "text-destructive", bg: stats.avgDaily >= 0 ? "bg-secondary" : "bg-destructive/10" },
   ];
 
   return (
