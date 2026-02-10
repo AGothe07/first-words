@@ -2,10 +2,10 @@ import { useFinance } from "@/contexts/FinanceContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Wallet, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useMemo } from "react";
-import { subMonths, parseISO, isWithinInterval, startOfMonth, endOfMonth } from "date-fns";
+import { subMonths, parseISO, isWithinInterval, startOfMonth, endOfMonth, differenceInDays, subDays, startOfYear } from "date-fns";
 
 export function KPICards() {
-  const { crossFilteredTransactions } = useFinance();
+  const { crossFilteredTransactions, filters } = useFinance();
 
   const stats = useMemo(() => {
     const expenses = crossFilteredTransactions.filter(t => t.type === "expense");
@@ -21,12 +21,44 @@ export function KPICards() {
       try { return isWithinInterval(parseISO(t.date), { start: prevStart, end: prevEnd }); } catch { return false; }
     }).reduce((s, t) => s + t.amount, 0);
 
-    const days = new Set(crossFilteredTransactions.map(t => t.date)).size || 1;
-    const avgDaily = (totalIncome - totalExpense) / days;
+    // Calculate calendar days from the active period filter
+    let calendarDays = 1;
+    const getPresetRange = (preset: string): { from: Date; to: Date } | null => {
+      switch (preset) {
+        case "7d": return { from: subDays(now, 7), to: now };
+        case "30d": return { from: subDays(now, 30), to: now };
+        case "month": return { from: startOfMonth(now), to: endOfMonth(now) };
+        case "year": return { from: startOfYear(now), to: now };
+        case "all": return null;
+        default: return null;
+      }
+    };
+
+    if (filters.preset === "custom" && filters.dateRange) {
+      const from = parseISO(filters.dateRange.from);
+      const to = parseISO(filters.dateRange.to);
+      calendarDays = differenceInDays(to, from) + 1;
+    } else if (filters.preset !== "all") {
+      const range = getPresetRange(filters.preset);
+      if (range) {
+        calendarDays = differenceInDays(range.to, range.from) + 1;
+      }
+    } else {
+      // "all" preset: use min/max dates from transactions
+      if (crossFilteredTransactions.length > 0) {
+        const dates = crossFilteredTransactions.map(t => t.date).sort();
+        const from = parseISO(dates[0]);
+        const to = parseISO(dates[dates.length - 1]);
+        calendarDays = differenceInDays(to, from) + 1;
+      }
+    }
+
+    if (calendarDays < 1) calendarDays = 1;
+    const avgDaily = balance / calendarDays;
     const variation = prevExpenses > 0 ? ((totalExpense - prevExpenses) / prevExpenses) * 100 : 0;
 
     return { totalExpense, totalIncome, balance, avgDaily, variation };
-  }, [crossFilteredTransactions]);
+  }, [crossFilteredTransactions, filters]);
 
   const fmt = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
