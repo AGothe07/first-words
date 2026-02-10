@@ -1,4 +1,4 @@
-import { LayoutDashboard, ArrowLeftRight, Table2, Tags, UserCog, LogOut, FileUp } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, Tags, UserCog, LogOut, FileUp } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 const mainItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Lançamentos", url: "/transactions", icon: ArrowLeftRight },
-  { title: "Tabela Detalhada", url: "/table", icon: Table2 },
 ];
 
 const settingsItems = [

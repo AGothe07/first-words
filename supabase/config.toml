@@ -1,1 +1,4 @@
 project_id = "ydycczdidgmphrrnucim"
+
+[functions.ingest-transaction]
+verify_jwt = false
