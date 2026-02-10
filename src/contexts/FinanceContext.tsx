@@ -6,7 +6,7 @@ import { startOfMonth, endOfMonth, subDays, startOfYear, format, parseISO, isWit
 import { toast } from "sonner";
 
 export interface ChartSelection {
-  type: "category" | "person" | "type" | null;
+  type: "category" | "person" | "type" | "subcategory" | null;
   ids: string[];
   labels: string[];
 }
@@ -35,7 +35,7 @@ interface FinanceContextType {
   filteredTransactions: Transaction[];
   crossFilteredTransactions: Transaction[];
   chartSelection: ChartSelection;
-  toggleChartSelection: (type: "category" | "person" | "type", id: string, label: string) => void;
+  toggleChartSelection: (type: "category" | "person" | "type" | "subcategory", id: string, label: string) => void;
   clearChartSelection: () => void;
   drillCategory: string | null;
   setDrillCategory: (c: string | null) => void;
@@ -77,7 +77,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const [chartSelection, setChartSelection] = useState<ChartSelection>({ type: null, ids: [], labels: [] });
   const clearChartSelection = useCallback(() => setChartSelection({ type: null, ids: [], labels: [] }), []);
 
-  const toggleChartSelection = useCallback((type: "category" | "person" | "type", id: string, label: string) => {
+  const toggleChartSelection = useCallback((type: "category" | "person" | "type" | "subcategory", id: string, label: string) => {
     setChartSelection(prev => {
       // If switching type, start fresh with this selection
       if (prev.type !== type) {
@@ -282,6 +282,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         case "category": return chartSelection.ids.includes(t.category_id);
         case "person": return chartSelection.ids.includes(t.person_id);
         case "type": return chartSelection.ids.includes(t.type);
+        case "subcategory": return t.subcategory_id ? chartSelection.ids.includes(t.subcategory_id) : false;
         default: return true;
       }
     });
