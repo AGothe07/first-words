@@ -23,6 +23,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      // Update last_activity on auth events
+      if (session?.user) {
+        supabase.from("profiles").update({ last_activity: new Date().toISOString() } as any).eq("id", session.user.id);
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {

@@ -7,10 +7,11 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { FinanceProvider } from "@/contexts/FinanceContext";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
-
 import CategoriesPage from "./pages/CategoriesPage";
 import PersonsManagePage from "./pages/PersonsManagePage";
 import ImportPage from "./pages/ImportPage";
+import AdminPage from "./pages/AdminPage";
+import AISettingsPage from "./pages/AISettingsPage";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
@@ -48,6 +49,8 @@ function AppRoutes() {
       <Route path="/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
       <Route path="/persons-manage" element={<ProtectedRoute><PersonsManagePage /></ProtectedRoute>} />
       <Route path="/import" element={<ProtectedRoute><ImportPage /></ProtectedRoute>} />
+      <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+      <Route path="/ai-settings" element={<ProtectedRoute><AISettingsPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

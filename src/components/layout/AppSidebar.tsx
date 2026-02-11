@@ -1,6 +1,7 @@
-import { LayoutDashboard, ArrowLeftRight, Tags, UserCog, LogOut, FileUp } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, Tags, UserCog, LogOut, FileUp, ShieldAlert, Bot } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter,
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 const mainItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Lançamentos", url: "/transactions", icon: ArrowLeftRight },
+  { title: "IA Conversacional", url: "/ai-settings", icon: Bot },
 ];
 
 const settingsItems = [
@@ -21,6 +23,7 @@ const settingsItems = [
 export function AppSidebar() {
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const { isAdmin } = useUserRole();
 
   return (
     <Sidebar className="border-r border-border">
@@ -63,6 +66,23 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administração</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === "/admin"}>
+                    <NavLink to="/admin">
+                      <ShieldAlert className="h-4 w-4" />
+                      <span>Painel Admin</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter className="p-3 border-t border-border">
         <p className="text-[10px] text-muted-foreground truncate mb-1">{user?.email}</p>

@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          revoked_at: string | null
+          revoked_by: string | null
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          revoked_at?: string | null
+          revoked_by?: string | null
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          revoked_at?: string | null
+          revoked_by?: string | null
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -109,25 +139,61 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ai_enabled: boolean
           created_at: string
           display_name: string | null
           email: string | null
           id: string
+          last_activity: string | null
+          phone: string | null
           updated_at: string
         }
         Insert: {
+          ai_enabled?: boolean
           created_at?: string
           display_name?: string | null
           email?: string | null
           id: string
+          last_activity?: string | null
+          phone?: string | null
           updated_at?: string
         }
         Update: {
+          ai_enabled?: boolean
           created_at?: string
           display_name?: string | null
           email?: string | null
           id?: string
+          last_activity?: string | null
+          phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      security_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -233,15 +299,132 @@ export type Database = {
           },
         ]
       }
+      user_financial_snapshot: {
+        Row: {
+          data: Json
+          phone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          data?: Json
+          phone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          data?: Json
+          phone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_configs: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      webhook_logs: {
+        Row: {
+          called_at: string
+          event_type: string
+          id: string
+          response_time_ms: number | null
+          status_code: number | null
+          user_id: string | null
+          webhook_config_id: string | null
+        }
+        Insert: {
+          called_at?: string
+          event_type?: string
+          id?: string
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_id?: string | null
+          webhook_config_id?: string | null
+        }
+        Update: {
+          called_at?: string
+          event_type?: string
+          id?: string
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_id?: string | null
+          webhook_config_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_webhook_config_id_fkey"
+            columns: ["webhook_config_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      rebuild_financial_snapshot: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -368,6 +551,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
