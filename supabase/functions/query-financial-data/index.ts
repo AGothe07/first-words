@@ -13,7 +13,6 @@ function jsonRes(body: unknown, status = 200) {
   });
 }
 
-// Rate limiting per function instance
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 60_000;
@@ -72,7 +71,6 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const svc = createClient(supabaseUrl, serviceRoleKey);
 
-  // Rate limit by IP
   const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   if (isRateLimited(`ip:${clientIp}`))
     return jsonRes({ error: "Rate limit exceeded." }, 429);
@@ -84,7 +82,7 @@ Deno.serve(async (req) => {
     return jsonRes({ error: "Invalid JSON body." }, 400);
   }
 
-  // Authenticate via X-User-Token or phone+token
+  // Authenticate via token
   const userToken = req.headers.get("X-User-Token") || (body.user_token as string);
   if (!userToken) return jsonRes({ error: "Missing user token." }, 401);
 
@@ -113,7 +111,7 @@ Deno.serve(async (req) => {
   if (isRateLimited(`token:${tokenRow.user_id}`))
     return jsonRes({ error: "Rate limit exceeded." }, 429);
 
-  // Get the phone number - either from body or from the user's profile
+  // Resolve phone number
   let phone: string;
   const phoneParam = body.phone_number ? String(body.phone_number).replace(/\D/g, "") : null;
 
@@ -121,7 +119,6 @@ Deno.serve(async (req) => {
     if (!isValidBrazilianPhone(phoneParam))
       return jsonRes({ error: "Invalid phone number format. Must start with 55." }, 400);
 
-    // Verify this phone belongs to the token's user
     const { data: profile } = await svc
       .from("profiles")
       .select("id, phone")
@@ -133,7 +130,6 @@ Deno.serve(async (req) => {
 
     phone = phoneParam;
   } else {
-    // Use the user's own phone
     const { data: profile } = await svc
       .from("profiles")
       .select("phone")
@@ -146,56 +142,50 @@ Deno.serve(async (req) => {
     phone = profile.phone;
   }
 
-  // Fetch transactions
-  const { data: transactions } = await svc
-    .from("vw_financial_data_by_phone")
-    .select("*")
-    .eq("phone", phone)
-    .order("date", { ascending: false });
-
-  // Fetch summary
-  const { data: summary } = await svc
-    .from("vw_financial_summary_by_phone")
-    .select("*")
+  // Read from consolidated snapshot table (single row, single JSONB column)
+  const { data: snapshot, error: snapError } = await svc
+    .from("user_financial_snapshot")
+    .select("data, updated_at")
     .eq("phone", phone)
     .maybeSingle();
 
-  // Monthly aggregation
-  const monthlyMap = new Map<string, { income: number; expense: number }>();
-  for (const t of transactions || []) {
-    const m = t.month_year;
-    const entry = monthlyMap.get(m) || { income: 0, expense: 0 };
-    if (t.type === "income") entry.income += Number(t.amount);
-    else entry.expense += Number(t.amount);
-    monthlyMap.set(m, entry);
-  }
-  const monthly = Array.from(monthlyMap.entries())
-    .map(([month, data]) => ({ month, ...data, balance: data.income - data.expense }))
-    .sort((a, b) => b.month.localeCompare(a.month));
-
-  // Category aggregation
-  const catMap = new Map<string, { total: number; count: number; type: string }>();
-  for (const t of transactions || []) {
-    const key = t.category_name;
-    const entry = catMap.get(key) || { total: 0, count: 0, type: t.type };
-    entry.total += Number(t.amount);
-    entry.count++;
-    catMap.set(key, entry);
-  }
-  const categories = Array.from(catMap.entries())
-    .map(([name, data]) => ({ name, ...data }))
-    .sort((a, b) => b.total - a.total);
-
   // Update last_activity
   await svc.from("profiles").update({ last_activity: new Date().toISOString() }).eq("id", tokenRow.user_id);
+
+  if (!snapshot || snapError) {
+    // No snapshot yet — trigger a rebuild and return empty
+    await svc.rpc("rebuild_user_snapshot", { p_user_id: tokenRow.user_id });
+
+    const { data: freshSnapshot } = await svc
+      .from("user_financial_snapshot")
+      .select("data, updated_at")
+      .eq("phone", phone)
+      .maybeSingle();
+
+    if (!freshSnapshot) {
+      return jsonRes({
+        success: true,
+        user_id: tokenRow.user_id,
+        phone,
+        data: { summary: { total_transactions: 0, total_income: 0, total_expense: 0, balance: 0 }, monthly: [], categories: [], subcategories: [], transactions: [] },
+        snapshot_updated_at: null,
+      });
+    }
+
+    return jsonRes({
+      success: true,
+      user_id: tokenRow.user_id,
+      phone,
+      data: freshSnapshot.data,
+      snapshot_updated_at: freshSnapshot.updated_at,
+    });
+  }
 
   return jsonRes({
     success: true,
     user_id: tokenRow.user_id,
     phone,
-    summary: summary || { total_transactions: 0, total_income: 0, total_expense: 0, balance: 0 },
-    monthly,
-    categories,
-    transactions: transactions || [],
+    data: snapshot.data,
+    snapshot_updated_at: snapshot.updated_at,
   });
 });
