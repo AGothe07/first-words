@@ -142,42 +142,43 @@ Deno.serve(async (req) => {
     phone = profile.phone;
   }
 
-  // Read from consolidated snapshot table (single row, single JSONB column)
+  // Read from consolidated snapshot table (two JSONB columns)
   const { data: snapshot, error: snapError } = await svc
     .from("user_financial_snapshot")
-    .select("data, updated_at")
+    .select("summary, transactions, updated_at")
     .eq("phone", phone)
     .maybeSingle();
 
   // Update last_activity
   await svc.from("profiles").update({ last_activity: new Date().toISOString() }).eq("id", tokenRow.user_id);
 
+  const emptyResponse = {
+    success: true,
+    user_id: tokenRow.user_id,
+    phone,
+    summary: { phone, user_status: "active", balance: 0, total_income: 0, total_expense: 0, total_transactions: 0, current_month: {}, monthly: [], categories: [], top_expense_categories: [], top_income_categories: [], avg_monthly_expense: 0, first_transaction_date: null, last_transaction_date: null },
+    transactions: [],
+    snapshot_updated_at: null,
+  };
+
   if (!snapshot || snapError) {
-    // No snapshot yet — trigger a rebuild and return empty
     await svc.rpc("rebuild_user_snapshot", { p_user_id: tokenRow.user_id });
 
-    const { data: freshSnapshot } = await svc
+    const { data: fresh } = await svc
       .from("user_financial_snapshot")
-      .select("data, updated_at")
+      .select("summary, transactions, updated_at")
       .eq("phone", phone)
       .maybeSingle();
 
-    if (!freshSnapshot) {
-      return jsonRes({
-        success: true,
-        user_id: tokenRow.user_id,
-        phone,
-        data: { summary: { total_transactions: 0, total_income: 0, total_expense: 0, balance: 0 }, monthly: [], categories: [], subcategories: [], transactions: [] },
-        snapshot_updated_at: null,
-      });
-    }
+    if (!fresh) return jsonRes(emptyResponse);
 
     return jsonRes({
       success: true,
       user_id: tokenRow.user_id,
       phone,
-      data: freshSnapshot.data,
-      snapshot_updated_at: freshSnapshot.updated_at,
+      summary: fresh.summary,
+      transactions: fresh.transactions,
+      snapshot_updated_at: fresh.updated_at,
     });
   }
 
@@ -185,7 +186,8 @@ Deno.serve(async (req) => {
     success: true,
     user_id: tokenRow.user_id,
     phone,
-    data: snapshot.data,
+    summary: snapshot.summary,
+    transactions: snapshot.transactions,
     snapshot_updated_at: snapshot.updated_at,
   });
 });
