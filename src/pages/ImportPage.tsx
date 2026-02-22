@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useFinance } from "@/contexts/FinanceContext";
+import { useAssets } from "@/contexts/AssetsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { TransactionType } from "@/types/finance";
@@ -20,13 +21,19 @@ interface FieldDef {
   required: boolean;
 }
 
-const ALL_FIELDS: FieldDef[] = [
+const TRANSACTION_FIELDS: FieldDef[] = [
   { key: "date", label: "Data", required: true },
   { key: "amount", label: "Valor", required: true },
   { key: "person", label: "Pessoa", required: true },
   { key: "category", label: "Categoria", required: true },
   { key: "subcategory", label: "Subcategoria", required: false },
   { key: "notes", label: "Observação", required: false },
+];
+
+const ASSET_FIELDS: FieldDef[] = [
+  { key: "date", label: "Data", required: true },
+  { key: "category", label: "Categoria", required: true },
+  { key: "value", label: "Valor", required: true },
 ];
 
 const IGNORE_VALUE = "__ignore__";
@@ -37,6 +44,7 @@ interface ValidationError {
   message: string;
 }
 
+type ImportMode = "expense" | "income" | "asset" | "";
 type Step = "upload" | "config" | "mapping" | "preview" | "done";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -47,20 +55,23 @@ interface ColumnData {
 }
 
 export default function ImportPage() {
-  const { categories, subcategories, persons, refreshData } = useFinance();
+  const { categories, subcategories, persons, refreshData: refreshFinance } = useFinance();
+  const { assetCategories, refreshData: refreshAssets } = useAssets();
   const { user } = useAuth();
 
   const [step, setStep] = useState<Step>("upload");
   const [file, setFile] = useState<File | null>(null);
   const [columns, setColumns] = useState<ColumnData[]>([]);
   const [rawData, setRawData] = useState<string[][]>([]);
-  const [transactionType, setTransactionType] = useState<TransactionType | "">("");
-  // columnMapping[i] = field key for column i, or IGNORE_VALUE to skip
+  const [importMode, setImportMode] = useState<ImportMode>("");
   const [columnMapping, setColumnMapping] = useState<string[]>([]);
   const [errors, setErrors] = useState<ValidationError[]>([]);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ total: number; imported: number; status: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isAssetMode = importMode === "asset";
+  const ALL_FIELDS = isAssetMode ? ASSET_FIELDS : TRANSACTION_FIELDS;
 
   const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -83,7 +94,6 @@ export default function ImportPage() {
         const data = new Uint8Array(event.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        // Use raw:true to get unformatted values - numbers stay as numbers
         const aoa: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: true });
 
         if (aoa.length < 2) {
@@ -104,12 +114,10 @@ export default function ImportPage() {
         }
 
         const headers = headerRow.slice(0, numCols);
-        // Preserve raw types: numbers stay as numbers, strings stay as strings
         const dataRows = aoa.slice(1)
           .map(row => headers.map((_, i) => {
             const val = row[i];
             if (val === null || val === undefined || val === "") return "";
-            // If it's already a number from XLSX, prefix with __NUM__ to bypass string parsing
             if (typeof val === "number") return `__NUM__${val}`;
             return String(val).trim();
           }))
@@ -129,12 +137,6 @@ export default function ImportPage() {
         setRawData(dataRows);
         setFile(f);
 
-        // Auto-assign: first N columns get the first N fields, rest get IGNORE
-        const defaultMapping = cols.map((_, i) =>
-          i < ALL_FIELDS.length ? ALL_FIELDS[i].key : IGNORE_VALUE
-        );
-        setColumnMapping(defaultMapping);
-
         setStep("config");
       } catch {
         toast.error("Erro ao ler arquivo. Verifique o formato.");
@@ -143,10 +145,19 @@ export default function ImportPage() {
     reader.readAsArrayBuffer(f);
   }, []);
 
+  // When mode changes, reset column mapping
+  const handleModeChange = useCallback((mode: ImportMode) => {
+    setImportMode(mode);
+    const fields = mode === "asset" ? ASSET_FIELDS : TRANSACTION_FIELDS;
+    const defaultMapping = columns.map((_, i) =>
+      i < fields.length ? fields[i].key : IGNORE_VALUE
+    );
+    setColumnMapping(defaultMapping);
+  }, [columns]);
+
   const updateColumnMapping = useCallback((colIndex: number, fieldKey: string) => {
     setColumnMapping(prev => {
       const next = [...prev];
-      // If this field is already assigned to another column, clear that one
       if (fieldKey !== IGNORE_VALUE) {
         const existingIdx = next.indexOf(fieldKey);
         if (existingIdx !== -1 && existingIdx !== colIndex) {
@@ -158,7 +169,6 @@ export default function ImportPage() {
     });
   }, []);
 
-  // Build a map from field key to column index from current mapping
   const getFieldColMap = useCallback((): Record<string, number> => {
     const map: Record<string, number> = {};
     columnMapping.forEach((fieldKey, colIdx) => {
@@ -171,47 +181,66 @@ export default function ImportPage() {
 
   const validate = useCallback((): ValidationError[] => {
     const errs: ValidationError[] = [];
-    const catMap = new Map(categories.filter(c => c.type === transactionType && c.is_active).map(c => [c.name.toLowerCase(), c.id]));
-    const subMap = new Map(subcategories.filter(s => s.is_active).map(s => [s.name.toLowerCase(), s.id]));
-    const perMap = new Map(persons.filter(p => p.is_active).map(p => [p.name.toLowerCase(), p.id]));
-
     const fieldColMap = getFieldColMap();
 
-    rawData.forEach((row, i) => {
-      const rowNum = i + 2;
+    if (isAssetMode) {
+      const assetCats = categories.filter(c => (c.type as string) === "asset" && c.is_active);
+      const catMap = new Map(assetCats.map(c => [c.name.toLowerCase(), c.id]));
 
-      if (fieldColMap.date !== undefined) {
-        const raw = row[fieldColMap.date];
-        if (!raw) errs.push({ row: rowNum, field: "Data", message: "Data vazia" });
-        else if (!parseFlexDate(raw)) errs.push({ row: rowNum, field: "Data", message: `Data inválida: "${raw}"` });
-      }
+      rawData.forEach((row, i) => {
+        const rowNum = i + 2;
+        if (fieldColMap.date !== undefined) {
+          const raw = row[fieldColMap.date];
+          if (!raw) errs.push({ row: rowNum, field: "Data", message: "Data vazia" });
+          else if (!parseFlexDate(raw)) errs.push({ row: rowNum, field: "Data", message: `Data inválida: "${raw}"` });
+        }
+        if (fieldColMap.value !== undefined) {
+          const raw = row[fieldColMap.value];
+          const num = parseFlexNumber(raw);
+          if (num === null || num < 0) errs.push({ row: rowNum, field: "Valor", message: `Valor inválido: "${raw}"` });
+        }
+        if (fieldColMap.category !== undefined) {
+          const raw = row[fieldColMap.category];
+          if (!raw) errs.push({ row: rowNum, field: "Categoria", message: "Categoria vazia" });
+          else if (!catMap.has(raw.toLowerCase().trim())) errs.push({ row: rowNum, field: "Categoria", message: `Categoria não cadastrada: "${raw}"` });
+        }
+      });
+    } else {
+      const catMap = new Map(categories.filter(c => c.type === importMode && c.is_active).map(c => [c.name.toLowerCase(), c.id]));
+      const subMap = new Map(subcategories.filter(s => s.is_active).map(s => [s.name.toLowerCase(), s.id]));
+      const perMap = new Map(persons.filter(p => p.is_active).map(p => [p.name.toLowerCase(), p.id]));
 
-      if (fieldColMap.amount !== undefined) {
-        const raw = row[fieldColMap.amount];
-        const num = parseFlexNumber(raw);
-        if (num === null || num <= 0) errs.push({ row: rowNum, field: "Valor", message: `Valor inválido: "${raw}"` });
-      }
-
-      if (fieldColMap.person !== undefined) {
-        const raw = row[fieldColMap.person];
-        if (!raw) errs.push({ row: rowNum, field: "Pessoa", message: "Pessoa vazia" });
-        else if (!perMap.has(raw.toLowerCase())) errs.push({ row: rowNum, field: "Pessoa", message: `Pessoa não cadastrada: "${raw}"` });
-      }
-
-      if (fieldColMap.category !== undefined) {
-        const raw = row[fieldColMap.category];
-        if (!raw) errs.push({ row: rowNum, field: "Categoria", message: "Categoria vazia" });
-        else if (!catMap.has(raw.toLowerCase())) errs.push({ row: rowNum, field: "Categoria", message: `Categoria não cadastrada: "${raw}"` });
-      }
-
-      if (fieldColMap.subcategory !== undefined) {
-        const raw = row[fieldColMap.subcategory];
-        if (raw && !subMap.has(raw.toLowerCase())) errs.push({ row: rowNum, field: "Subcategoria", message: `Subcategoria não cadastrada: "${raw}"` });
-      }
-    });
+      rawData.forEach((row, i) => {
+        const rowNum = i + 2;
+        if (fieldColMap.date !== undefined) {
+          const raw = row[fieldColMap.date];
+          if (!raw) errs.push({ row: rowNum, field: "Data", message: "Data vazia" });
+          else if (!parseFlexDate(raw)) errs.push({ row: rowNum, field: "Data", message: `Data inválida: "${raw}"` });
+        }
+        if (fieldColMap.amount !== undefined) {
+          const raw = row[fieldColMap.amount];
+          const num = parseFlexNumber(raw);
+          if (num === null || num <= 0) errs.push({ row: rowNum, field: "Valor", message: `Valor inválido: "${raw}"` });
+        }
+        if (fieldColMap.person !== undefined) {
+          const raw = row[fieldColMap.person];
+          if (!raw) errs.push({ row: rowNum, field: "Pessoa", message: "Pessoa vazia" });
+          else if (!perMap.has(raw.toLowerCase())) errs.push({ row: rowNum, field: "Pessoa", message: `Pessoa não cadastrada: "${raw}"` });
+        }
+        if (fieldColMap.category !== undefined) {
+          const raw = row[fieldColMap.category];
+          if (!raw) errs.push({ row: rowNum, field: "Categoria", message: "Categoria vazia" });
+          else if (!catMap.has(raw.toLowerCase())) errs.push({ row: rowNum, field: "Categoria", message: `Categoria não cadastrada: "${raw}"` });
+        }
+        if (fieldColMap.subcategory !== undefined) {
+          const raw = row[fieldColMap.subcategory];
+          if (raw && !subMap.has(raw.toLowerCase())) errs.push({ row: rowNum, field: "Subcategoria", message: `Subcategoria não cadastrada: "${raw}"` });
+        }
+      });
+    }
 
     return errs;
-  }, [rawData, columnMapping, getFieldColMap, categories, subcategories, persons, transactionType]);
+  }, [rawData, columnMapping, getFieldColMap, categories, subcategories, persons, importMode, isAssetMode, assetCategories]);
 
   const goToPreview = useCallback(() => {
     const fieldColMap = getFieldColMap();
@@ -223,54 +252,84 @@ export default function ImportPage() {
     const errs = validate();
     setErrors(errs);
     setStep("preview");
-  }, [getFieldColMap, validate]);
+  }, [getFieldColMap, validate, ALL_FIELDS]);
 
   const doImport = useThrottle(async () => {
     if (!user || importing || errors.length > 0) return;
     setImporting(true);
 
     try {
-      const catMap = new Map(categories.filter(c => c.type === transactionType && c.is_active).map(c => [c.name.toLowerCase(), c.id]));
-      const subMap = new Map(subcategories.filter(s => s.is_active).map(s => [s.name.toLowerCase(), s.id]));
-      const perMap = new Map(persons.filter(p => p.is_active).map(p => [p.name.toLowerCase(), p.id]));
-
       const fieldColMap = getFieldColMap();
 
-      const records = rawData.map(row => ({
-        user_id: user.id,
-        type: transactionType as TransactionType,
-        date: parseFlexDate(row[fieldColMap.date])!,
-        amount: parseFlexNumber(row[fieldColMap.amount])!,
-        person_id: perMap.get(row[fieldColMap.person]?.toLowerCase())!,
-        category_id: catMap.get(row[fieldColMap.category]?.toLowerCase())!,
-        subcategory_id: fieldColMap.subcategory !== undefined && row[fieldColMap.subcategory]
-          ? subMap.get(row[fieldColMap.subcategory]?.toLowerCase()) || null
-          : null,
-        notes: fieldColMap.notes !== undefined ? row[fieldColMap.notes] || null : null,
-      }));
+      if (isAssetMode) {
+        const records = rawData.map(row => ({
+          user_id: user.id,
+          category: row[fieldColMap.category].toUpperCase().trim(),
+          date: parseFlexDate(row[fieldColMap.date])!,
+          value: parseFlexNumber(row[fieldColMap.value])!,
+        }));
 
-      const { error } = await supabase.from("transactions").insert(records);
-      const status = error ? "error" : "success";
-      const imported = error ? 0 : records.length;
+        const { error } = await supabase.from("assets").insert(records);
+        if (error) {
+          toast.error("Erro na importação: " + error.message);
+          setImportResult({ total: rawData.length, imported: 0, status: "error" });
+        } else {
+          toast.success(`${records.length} registros importados com sucesso!`);
+          setImportResult({ total: rawData.length, imported: records.length, status: "success" });
+          await refreshAssets();
+        }
 
-      await supabase.from("import_logs").insert({
-        user_id: user.id,
-        type: transactionType as string,
-        file_name: file?.name || "unknown",
-        total_records: rawData.length,
-        imported_records: imported,
-        status,
-        error_details: error ? { message: error.message } : null,
-      });
-
-      if (error) {
-        toast.error("Erro na importação: " + error.message);
-        setImportResult({ total: rawData.length, imported: 0, status: "error" });
+        await supabase.from("import_logs").insert({
+          user_id: user.id,
+          type: "asset",
+          file_name: file?.name || "unknown",
+          total_records: rawData.length,
+          imported_records: error ? 0 : rawData.length,
+          status: error ? "error" : "success",
+          error_details: error ? { message: error.message } : null,
+        });
       } else {
-        toast.success(`${imported} registros importados com sucesso!`);
-        setImportResult({ total: rawData.length, imported, status: "success" });
-        await refreshData();
+        const catMap = new Map(categories.filter(c => c.type === importMode && c.is_active).map(c => [c.name.toLowerCase(), c.id]));
+        const subMap = new Map(subcategories.filter(s => s.is_active).map(s => [s.name.toLowerCase(), s.id]));
+        const perMap = new Map(persons.filter(p => p.is_active).map(p => [p.name.toLowerCase(), p.id]));
+
+        const records = rawData.map(row => ({
+          user_id: user.id,
+          type: importMode as TransactionType,
+          date: parseFlexDate(row[fieldColMap.date])!,
+          amount: parseFlexNumber(row[fieldColMap.amount])!,
+          person_id: perMap.get(row[fieldColMap.person]?.toLowerCase())!,
+          category_id: catMap.get(row[fieldColMap.category]?.toLowerCase())!,
+          subcategory_id: fieldColMap.subcategory !== undefined && row[fieldColMap.subcategory]
+            ? subMap.get(row[fieldColMap.subcategory]?.toLowerCase()) || null
+            : null,
+          notes: fieldColMap.notes !== undefined ? row[fieldColMap.notes] || null : null,
+        }));
+
+        const { error } = await supabase.from("transactions").insert(records);
+        const status = error ? "error" : "success";
+        const imported = error ? 0 : records.length;
+
+        await supabase.from("import_logs").insert({
+          user_id: user.id,
+          type: importMode as string,
+          file_name: file?.name || "unknown",
+          total_records: rawData.length,
+          imported_records: imported,
+          status,
+          error_details: error ? { message: error.message } : null,
+        });
+
+        if (error) {
+          toast.error("Erro na importação: " + error.message);
+          setImportResult({ total: rawData.length, imported: 0, status: "error" });
+        } else {
+          toast.success(`${imported} registros importados com sucesso!`);
+          setImportResult({ total: rawData.length, imported, status: "success" });
+          await refreshFinance();
+        }
       }
+
       setStep("done");
     } catch (err: any) {
       toast.error("Erro inesperado: " + err.message);
@@ -284,21 +343,20 @@ export default function ImportPage() {
     setFile(null);
     setColumns([]);
     setRawData([]);
-    setTransactionType("");
+    setImportMode("");
     setColumnMapping([]);
     setErrors([]);
     setImportResult(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // Which field keys are currently assigned
   const assignedFields = new Set(columnMapping.filter(k => k !== IGNORE_VALUE));
 
   return (
     <AppLayout>
       <div className="mb-4">
         <h1 className="text-xl font-bold tracking-tight">Importar Dados</h1>
-        <p className="text-sm text-muted-foreground">Importe transações de arquivos CSV ou Excel</p>
+        <p className="text-sm text-muted-foreground">Importe transações ou patrimônio de arquivos CSV ou Excel</p>
       </div>
 
       {/* Progress */}
@@ -336,17 +394,18 @@ export default function ImportPage() {
           <CardContent className="space-y-4">
             <div>
               <Label>Este arquivo representa:</Label>
-              <Select value={transactionType} onValueChange={(v) => setTransactionType(v as TransactionType)}>
+              <Select value={importMode} onValueChange={(v) => handleModeChange(v as ImportMode)}>
                 <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="expense">Gastos (Despesas)</SelectItem>
                   <SelectItem value="income">Receitas</SelectItem>
+                  <SelectItem value="asset">Patrimônio</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={reset}><ArrowLeft className="h-3 w-3 mr-1" /> Voltar</Button>
-              <Button size="sm" disabled={!transactionType} onClick={() => setStep("mapping")}>
+              <Button size="sm" disabled={!importMode} onClick={() => setStep("mapping")}>
                 Próximo <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
             </div>
@@ -354,7 +413,7 @@ export default function ImportPage() {
         </Card>
       )}
 
-      {/* Step 3: Column Mapping — each column gets a dropdown */}
+      {/* Step 3: Column Mapping */}
       {step === "mapping" && (
         <Card>
           <CardHeader>
@@ -538,7 +597,6 @@ function parseFlexDate(raw: string): string | null {
   if (!raw) return null;
   let s = raw.trim();
 
-  // Handle XLSX raw number (Excel serial date)
   if (s.startsWith("__NUM__")) {
     const num = parseFloat(s.slice(7));
     if (!isNaN(num) && num > 30000 && num < 60000) {
@@ -571,7 +629,6 @@ function parseFlexDate(raw: string): string | null {
 function parseFlexNumber(raw: string): number | null {
   if (!raw) return null;
 
-  // If value came directly from XLSX as a number, use it as-is
   if (raw.startsWith("__NUM__")) {
     const n = parseFloat(raw.slice(7));
     if (isNaN(n) || n < 0) return null;
@@ -581,25 +638,16 @@ function parseFlexNumber(raw: string): number | null {
   let s = raw.trim().replace(/[R$\s]/g, "");
   if (!s) return null;
 
-  // Brazilian: "1.234,56" or "1.234.567,89" (dot=thousands, comma=decimal)
-  // MUST have comma to be considered Brazilian thousands format
   if (/^\d{1,3}(\.\d{3})+,\d{1,2}$/.test(s)) {
     s = s.replace(/\./g, "").replace(",", ".");
-  }
-  // US: "1,234.56" or "1,234,567.89" (comma=thousands, dot=decimal)
-  else if (/^\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(s)) {
+  } else if (/^\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(s)) {
     s = s.replace(/,/g, "");
-  }
-  // Simple comma decimal: "127,61" or "6,98" (no thousands separator)
-  else if (/^\d+(,\d{1,2})$/.test(s)) {
+  } else if (/^\d+(,\d{1,2})$/.test(s)) {
     s = s.replace(",", ".");
-  }
-  // Simple dot decimal or integer: "127.61", "6.98", "127"
-  else if (/^\d+(\.\d+)?$/.test(s)) {
-    // already correct format
-  }
-  else {
-    return null; // unrecognized format, block it
+  } else if (/^\d+(\.\d+)?$/.test(s)) {
+    // already correct
+  } else {
+    return null;
   }
 
   const n = parseFloat(s);

@@ -1,4 +1,5 @@
 import { useFinance } from "@/contexts/FinanceContext";
+import { useDimensions } from "@/contexts/DimensionsContext";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -8,12 +9,14 @@ import { X, Filter } from "lucide-react";
 
 export function GlobalFilters() {
   const { filters, setFilters, persons, categories } = useFinance();
+  const { isDimensionActive, paymentMethods, accounts, projects } = useDimensions();
 
   const presets = [
     { value: "7d", label: "Últimos 7 dias" },
     { value: "30d", label: "Últimos 30 dias" },
     { value: "month", label: "Mês atual" },
     { value: "year", label: "Ano atual" },
+    { value: "upto_month", label: "Até o mês atual" },
     { value: "all", label: "Todo período" },
   ];
 
@@ -21,6 +24,9 @@ export function GlobalFilters() {
     filters.persons.length > 0,
     filters.categories.length > 0,
     filters.type !== "all",
+    filters.paymentMethods.length > 0,
+    filters.accounts.length > 0,
+    filters.projects.length > 0,
   ].filter(Boolean).length;
 
   const clearFilters = () => setFilters(prev => ({
@@ -29,10 +35,16 @@ export function GlobalFilters() {
     categories: [],
     subcategories: [],
     type: "all",
+    paymentMethods: [],
+    accounts: [],
+    projects: [],
   }));
 
   const activePersons = persons.filter(p => p.is_active);
   const activeCategories = categories.filter(c => c.is_active);
+  const activePMs = paymentMethods.filter(p => p.is_active);
+  const activeAccounts = accounts.filter(a => a.is_active);
+  const activeProjects = projects.filter(p => p.is_active);
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-6 p-3 rounded-xl bg-muted/50 border border-border">
@@ -102,6 +114,84 @@ export function GlobalFilters() {
                   }}
                 />
                 {c.name}
+              </label>
+            ))}
+          </PopoverContent>
+        </Popover>
+      )}
+
+      {isDimensionActive("payment_method") && activePMs.length > 0 && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs">
+              Forma Pgto {filters.paymentMethods.length > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[10px]">{filters.paymentMethods.length}</Badge>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2 max-h-64 overflow-auto">
+            {activePMs.map(p => (
+              <label key={p.id} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-muted cursor-pointer text-sm">
+                <Checkbox
+                  checked={filters.paymentMethods.includes(p.id)}
+                  onCheckedChange={checked => {
+                    setFilters(prev => ({
+                      ...prev,
+                      paymentMethods: checked ? [...prev.paymentMethods, p.id] : prev.paymentMethods.filter(x => x !== p.id)
+                    }));
+                  }}
+                />
+                {p.name}
+              </label>
+            ))}
+          </PopoverContent>
+        </Popover>
+      )}
+
+      {isDimensionActive("account") && activeAccounts.length > 0 && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs">
+              Conta {filters.accounts.length > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[10px]">{filters.accounts.length}</Badge>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2 max-h-64 overflow-auto">
+            {activeAccounts.map(a => (
+              <label key={a.id} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-muted cursor-pointer text-sm">
+                <Checkbox
+                  checked={filters.accounts.includes(a.id)}
+                  onCheckedChange={checked => {
+                    setFilters(prev => ({
+                      ...prev,
+                      accounts: checked ? [...prev.accounts, a.id] : prev.accounts.filter(x => x !== a.id)
+                    }));
+                  }}
+                />
+                {a.name}
+              </label>
+            ))}
+          </PopoverContent>
+        </Popover>
+      )}
+
+      {isDimensionActive("project") && activeProjects.length > 0 && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs">
+              Projeto {filters.projects.length > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[10px]">{filters.projects.length}</Badge>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-52 p-2 max-h-64 overflow-auto">
+            {activeProjects.map(p => (
+              <label key={p.id} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-muted cursor-pointer text-sm">
+                <Checkbox
+                  checked={filters.projects.includes(p.id)}
+                  onCheckedChange={checked => {
+                    setFilters(prev => ({
+                      ...prev,
+                      projects: checked ? [...prev.projects, p.id] : prev.projects.filter(x => x !== p.id)
+                    }));
+                  }}
+                />
+                {p.name}
               </label>
             ))}
           </PopoverContent>

@@ -4,14 +4,16 @@ import { KPICards } from "@/components/dashboard/KPICards";
 import { CategoryChart } from "@/components/dashboard/CategoryChart";
 import { SpendingTimelineChart } from "@/components/dashboard/SpendingTimelineChart";
 import { PersonChart } from "@/components/dashboard/PersonChart";
-import { InsightsPanel } from "@/components/dashboard/InsightsPanel";
 import { CategoryRankingChart } from "@/components/dashboard/CategoryRankingChart";
 import { SubcategoryChart } from "@/components/dashboard/SubcategoryChart";
 import { CumulativeBalanceChart } from "@/components/dashboard/CumulativeBalanceChart";
 import { PersonTimelineChart } from "@/components/dashboard/PersonTimelineChart";
 import { WeekdayChart } from "@/components/dashboard/WeekdayChart";
+import { DimensionChart } from "@/components/dashboard/DimensionChart";
 import { TransactionForm } from "@/components/transactions/TransactionForm";
 import { useFinance } from "@/contexts/FinanceContext";
+import { useDimensions } from "@/contexts/DimensionsContext";
+import { DimensionKey } from "@/types/dimensions";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 
@@ -24,6 +26,9 @@ function ActiveSelectionBanner() {
     person: "Pessoa",
     type: "Tipo",
     subcategory: "Subcategoria",
+    payment_method: "Forma de Pagamento",
+    account: "Conta / Cartão",
+    project: "Projeto",
   };
 
   return (
@@ -45,6 +50,11 @@ function ActiveSelectionBanner() {
 }
 
 export default function Dashboard() {
+  const { isDimensionActive } = useDimensions();
+
+  const chartDimensions: DimensionKey[] = (["payment_method", "account", "project"] as DimensionKey[])
+    .filter(k => isDimensionActive(k));
+
   return (
     <AppLayout>
       <div className="flex items-center justify-between mb-4">
@@ -81,14 +91,19 @@ export default function Dashboard() {
         <PersonTimelineChart />
       </div>
 
+      {/* Dynamic dimension charts */}
+      {chartDimensions.length > 0 && (
+        <div className={`grid grid-cols-1 ${chartDimensions.length >= 2 ? "lg:grid-cols-2" : ""} ${chartDimensions.length >= 3 ? "xl:grid-cols-3" : ""} gap-4 mb-4`}>
+          {chartDimensions.map(key => (
+            <DimensionChart key={key} dimensionKey={key} />
+          ))}
+        </div>
+      )}
+
       {/* Saldo + Dia da semana */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <CumulativeBalanceChart />
         <WeekdayChart />
-      </div>
-
-      <div className="mb-4">
-        <InsightsPanel />
       </div>
     </AppLayout>
   );

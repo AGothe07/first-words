@@ -14,20 +14,22 @@ import { Plus, Pencil, Trash2, ChevronRight, FolderPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useThrottle } from "@/hooks/useDebounce";
 
+type CategoryType = TransactionType | "asset";
+
 export default function CategoriesPage() {
   const { categories, subcategories, addCategory, updateCategory, deleteCategory, addSubcategory, updateSubcategory, deleteSubcategory } = useFinance();
   const [newName, setNewName] = useState("");
-  const [newType, setNewType] = useState<TransactionType>("expense");
+  const [newType, setNewType] = useState<CategoryType>("expense");
   const [openAdd, setOpenAdd] = useState(false);
   const [editingCat, setEditingCat] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
   const [newSubName, setNewSubName] = useState("");
-  const [filterType, setFilterType] = useState<TransactionType | "all">("all");
+  const [filterType, setFilterType] = useState<CategoryType | "all">("all");
 
   const throttledAddCategory = useThrottle(async () => {
     if (!newName.trim()) { toast.error("Nome obrigatório"); return; }
-    await addCategory(newName, newType);
+    await addCategory(newName, newType as TransactionType);
     setNewName("");
     setOpenAdd(false);
   }, 1000);
@@ -40,6 +42,15 @@ export default function CategoriesPage() {
 
   const filtered = categories.filter(c => filterType === "all" || c.type === filterType);
 
+  const typeLabel = (type: string) => {
+    switch (type) {
+      case "expense": return "Gasto";
+      case "income": return "Receita";
+      case "asset": return "Patrimônio";
+      default: return type;
+    }
+  };
+
   return (
     <AppLayout>
       <div className="flex items-center justify-between mb-4">
@@ -49,11 +60,12 @@ export default function CategoriesPage() {
         </div>
         <div className="flex items-center gap-2">
           <Select value={filterType} onValueChange={v => setFilterType(v as any)}>
-            <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas</SelectItem>
               <SelectItem value="expense">Gastos</SelectItem>
               <SelectItem value="income">Receitas</SelectItem>
+              <SelectItem value="asset">Patrimônio</SelectItem>
             </SelectContent>
           </Select>
           <Dialog open={openAdd} onOpenChange={setOpenAdd}>
@@ -69,11 +81,12 @@ export default function CategoriesPage() {
                 </div>
                 <div>
                   <Label className="text-xs">Tipo</Label>
-                  <Select value={newType} onValueChange={v => setNewType(v as TransactionType)}>
+                  <Select value={newType} onValueChange={v => setNewType(v as CategoryType)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="expense">Gasto</SelectItem>
                       <SelectItem value="income">Receita</SelectItem>
+                      <SelectItem value="asset">Patrimônio</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -106,7 +119,7 @@ export default function CategoriesPage() {
                     ) : (
                       <span className={`text-sm font-medium ${!cat.is_active ? "text-muted-foreground line-through" : ""}`}>{cat.name}</span>
                     )}
-                    <Badge variant="outline" className="text-[10px]">{cat.type === "expense" ? "Gasto" : "Receita"}</Badge>
+                    <Badge variant="outline" className="text-[10px]">{typeLabel(cat.type)}</Badge>
                     {subs.length > 0 && <Badge variant="secondary" className="text-[10px]">{subs.length} sub</Badge>}
                   </div>
                   <div className="flex items-center gap-2">

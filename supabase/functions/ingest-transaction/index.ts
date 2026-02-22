@@ -1,19 +1,61 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-user-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  "https://financial.lendscope.com.br",
+  "https://n8n-n8n.czby9f.easypanel.host",
+  "https://id-preview--25132eda-0e5b-447c-9d18-6de3b7514cfb.lovable.app",
+  "https://design-zen-space-45.lovable.app",
+];
+
+function getCorsHeaders(req?: Request) {
+  const origin = req?.headers.get("Origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-user-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
+
+let _reqRef: Request | undefined;
 
 function jsonRes(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...getCorsHeaders(_reqRef), "Content-Type": "application/json" },
   });
 }
 
-// --- Rate limiting (per function instance) ---
+/**
+ * Normalize any Brazilian phone variation to canonical format: 55 + DDD(2) + 9 + number(8)
+ */
+function normalizePhone(input: string): string | null {
+  const digits = input.replace(/\D/g, "");
+  
+  let local: string;
+  
+  if (digits.startsWith("55") && digits.length >= 12) {
+    local = digits.slice(2);
+  } else if (digits.length <= 11) {
+    local = digits;
+  } else {
+    return null;
+  }
+  
+  if (local.length === 11 && local[2] === "9") {
+    return "55" + local;
+  }
+  if (local.length === 10) {
+    return "55" + local.slice(0, 2) + "9" + local.slice(2);
+  }
+  if (local.length === 11 && local[2] !== "9") {
+    return "55" + local;
+  }
+  
+  return null;
+}
+
+// --- Rate limiting ---
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 30;
 const RATE_WINDOW_MS = 60_000;
@@ -29,7 +71,6 @@ function isRateLimited(key: string): boolean {
   return entry.count > RATE_LIMIT;
 }
 
-// --- Progressive blocking (failed attempts) ---
 const failedAttempts = new Map<string, { count: number; blockedUntil: number }>();
 
 function checkBlocked(key: string): boolean {
@@ -70,12 +111,7 @@ async function sha256(msg: string): Promise<string> {
   return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function isValidBrazilianPhone(phone: string): boolean {
-  const digits = phone.replace(/\D/g, "");
-  return /^55\d{10,11}$/.test(digits);
-}
-
-// --- Resolve user ID from various auth methods ---
+// --- Resolve user ID ---
 async function resolveUserId(
   req: Request,
   svc: any,
@@ -85,11 +121,6 @@ async function resolveUserId(
 ): Promise<{ userId: string | null; error: Response | null }> {
   const userTokenHeader = req.headers.get("X-User-Token");
 
-  // Method 1: Phone-based identification (for WhatsApp/AI integrations)
-  // Requires service-level auth (Authorization header) + phone in body
-  // We'll check this in the main handler after parsing body
-
-  // Method 2: X-User-Token header
   if (userTokenHeader) {
     const blockKey = `token:${userTokenHeader.slice(0, 8)}`;
     if (checkBlocked(blockKey))
@@ -120,7 +151,6 @@ async function resolveUserId(
     return { userId: tokenRow.user_id, error: null };
   }
 
-  // Method 3: Standard JWT auth
   const userClient = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: authHeader } },
   });
@@ -138,7 +168,8 @@ async function resolveUserId(
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  _reqRef = req;
+  if (req.method === "OPTIONS") return new Response(null, { headers: getCorsHeaders(req) });
   if (req.method !== "POST") return jsonRes({ error: "Method not allowed. Use POST." }, 405);
 
   const authHeader = req.headers.get("Authorization");
@@ -151,13 +182,11 @@ Deno.serve(async (req) => {
 
   const svc = createClient(supabaseUrl, serviceRoleKey);
 
-  // Rate limit by IP
   const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   if (isRateLimited(`ip:${clientIp}`)) {
     return jsonRes({ error: "Rate limit exceeded." }, 429);
   }
 
-  // Parse body first (needed for phone-based auth)
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -167,29 +196,30 @@ Deno.serve(async (req) => {
 
   // --- Determine user identity ---
   let userId: string;
-  const phoneInBody = body.phone_number ? String(body.phone_number).replace(/\D/g, "") : null;
+  const rawPhone = body.phone_number ? String(body.phone_number).replace(/\D/g, "") : null;
 
-  if (phoneInBody) {
-    // Phone-based identification
-    if (!isValidBrazilianPhone(phoneInBody))
-      return jsonRes({ error: "'phone_number' must be a valid Brazilian phone (55 + DDD + number)." }, 400);
+  if (rawPhone) {
+    // Normalize phone to canonical format
+    const phoneCanonical = normalizePhone(rawPhone);
+    if (!phoneCanonical)
+      return jsonRes({ error: "'phone_number' could not be normalized to a valid Brazilian phone." }, 400);
 
-    if (isRateLimited(`phone:${phoneInBody}`))
+    if (isRateLimited(`phone:${phoneCanonical}`))
       return jsonRes({ error: "Rate limit exceeded for this phone number." }, 429);
 
-    const blockKey = `phone:${phoneInBody}`;
+    const blockKey = `phone:${phoneCanonical}`;
     if (checkBlocked(blockKey))
       return jsonRes({ error: "Too many failed attempts for this phone. Try again later." }, 429);
 
     const { data: profile } = await svc
       .from("profiles")
       .select("id, ai_enabled")
-      .eq("phone", phoneInBody)
+      .eq("phone", phoneCanonical)
       .maybeSingle();
 
     if (!profile) {
       recordFailure(blockKey);
-      return jsonRes({ error: `No user associated with phone number ${phoneInBody}.` }, 404);
+      return jsonRes({ error: `No user associated with phone number.` }, 404);
     }
     if (!profile.ai_enabled) {
       return jsonRes({ error: "AI/API integration is not enabled for this user." }, 403);
@@ -197,7 +227,6 @@ Deno.serve(async (req) => {
 
     userId = profile.id;
   } else {
-    // Token or JWT-based auth
     const result = await resolveUserId(req, svc, supabaseUrl, supabaseAnonKey, authHeader);
     if (result.error) return result.error;
     userId = result.userId!;
@@ -242,7 +271,6 @@ Deno.serve(async (req) => {
 
   if (errors.length > 0) return jsonRes({ error: "Validation failed.", details: errors }, 400);
 
-  // Look up person
   const { data: personRows, error: personErr } = await svc
     .from("persons")
     .select("id")
@@ -253,7 +281,6 @@ Deno.serve(async (req) => {
     return jsonRes({ error: `Person '${personName}' not found. Create it first.` }, 400);
   const personId = personRows[0].id;
 
-  // Look up category
   const { data: catRows, error: catErr } = await svc
     .from("categories")
     .select("id")
@@ -265,7 +292,6 @@ Deno.serve(async (req) => {
     return jsonRes({ error: `Category '${categoryName}' of type '${type}' not found.` }, 400);
   const categoryId = catRows[0].id;
 
-  // Look up subcategory
   let subcategoryId: string | null = null;
   if (subcategoryName && String(subcategoryName).trim().length > 0) {
     const { data: subRows, error: subErr } = await svc
@@ -280,12 +306,10 @@ Deno.serve(async (req) => {
     subcategoryId = subRows[0].id;
   }
 
-  // Duplicate check
   const fingerprint = `${userId}:${amount}:${date}:${categoryId}:${personId}`;
   if (isDuplicate(fingerprint))
     return jsonRes({ error: "Duplicate detected. Same transaction submitted within 30 seconds." }, 409);
 
-  // Insert transaction
   const { data: inserted, error: insertErr } = await svc
     .from("transactions")
     .insert({
@@ -301,10 +325,11 @@ Deno.serve(async (req) => {
     .select("id, type, date, amount, notes")
     .single();
 
-  if (insertErr)
-    return jsonRes({ error: "Failed to insert transaction.", details: insertErr.message }, 500);
+  if (insertErr) {
+    console.error("ingest-transaction insert error:", insertErr);
+    return jsonRes({ error: "Failed to insert transaction." }, 500);
+  }
 
-  // Update last_activity
   await svc.from("profiles").update({ last_activity: new Date().toISOString() }).eq("id", userId);
 
   return jsonRes(

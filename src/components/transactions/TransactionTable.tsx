@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useFinance } from "@/contexts/FinanceContext";
+import { useDimensions } from "@/contexts/DimensionsContext";
 import { Transaction } from "@/types/finance";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ type SortKey = "date" | "amount" | "person_name" | "category_name";
 
 export function TransactionTable() {
   const { filteredTransactions, deleteTransaction, bulkDeleteTransactions, categories, subcategories, persons } = useFinance();
+  const { isDimensionActive } = useDimensions();
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortAsc, setSortAsc] = useState(false);
@@ -297,6 +299,9 @@ export function TransactionTable() {
               <SortHeader k="person_name">Pessoa</SortHeader>
               <SortHeader k="category_name">Categoria</SortHeader>
               <TableHead>Sub</TableHead>
+              {isDimensionActive("payment_method") && <TableHead>Pagamento</TableHead>}
+              {isDimensionActive("account") && <TableHead>Conta</TableHead>}
+              {isDimensionActive("project") && <TableHead>Projeto</TableHead>}
               <TableHead>Obs</TableHead>
               <TableHead className="w-20">Ações</TableHead>
             </TableRow>
@@ -304,14 +309,19 @@ export function TransactionTable() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8 + (isDimensionActive("payment_method") ? 1 : 0) + (isDimensionActive("account") ? 1 : 0) + (isDimensionActive("project") ? 1 : 0)} className="text-center text-muted-foreground py-8">
                   Nenhum lançamento encontrado
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map(t => (
                 <TableRow key={t.id}>
-                  <TableCell className="text-xs">{format(parseISO(t.date), "dd/MM/yy")}</TableCell>
+                  <TableCell className="text-xs">
+                    {format(parseISO(t.date), "dd/MM/yy")}
+                    {t.installment_number && t.installment_total && (
+                      <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0">{t.installment_number}/{t.installment_total}</Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={t.type === "income" ? "default" : "destructive"} className="text-[10px]">
                       {t.type === "income" ? "Receita" : "Gasto"}
@@ -321,6 +331,9 @@ export function TransactionTable() {
                   <TableCell className="text-xs">{t.person_name}</TableCell>
                   <TableCell className="text-xs">{t.category_name}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{t.subcategory_name}</TableCell>
+                  {isDimensionActive("payment_method") && <TableCell className="text-xs text-muted-foreground">{t.payment_method_name}</TableCell>}
+                  {isDimensionActive("account") && <TableCell className="text-xs text-muted-foreground">{t.account_name}</TableCell>}
+                  {isDimensionActive("project") && <TableCell className="text-xs text-muted-foreground">{t.project_name}</TableCell>}
                   <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">{t.notes}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">

@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          account_type: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_type?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_type?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agenda_items: {
+        Row: {
+          all_day: boolean | null
+          color: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          item_type: string
+          priority: string | null
+          recurrence: string | null
+          recurrence_end: string | null
+          start_date: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          all_day?: boolean | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          item_type?: string
+          priority?: string | null
+          recurrence?: string | null
+          recurrence_end?: string | null
+          start_date: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          all_day?: boolean | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          item_type?: string
+          priority?: string | null
+          recurrence?: string | null
+          recurrence_end?: string | null
+          start_date?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_tokens: {
         Row: {
           created_at: string
@@ -44,6 +128,89 @@ export type Database = {
         }
         Relationships: []
       }
+      assets: {
+        Row: {
+          category: string
+          created_at: string
+          date: string
+          id: string
+          updated_at: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          date: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          date?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      auto_messages: {
+        Row: {
+          channel: string | null
+          created_at: string
+          event_id: string | null
+          id: string
+          is_active: boolean | null
+          last_sent_at: string | null
+          message_template: string
+          send_at_offset_days: number | null
+          send_time: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sent_at?: string | null
+          message_template: string
+          send_at_offset_days?: number | null
+          send_time?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sent_at?: string | null
+          message_template?: string
+          send_at_offset_days?: number | null
+          send_time?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_messages_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "important_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -69,6 +236,137 @@ export type Database = {
           is_active?: boolean
           name?: string
           type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      dimension_settings: {
+        Row: {
+          created_at: string | null
+          dimension_key: string
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dimension_key: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dimension_key?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      goal_checkpoints: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          due_date: string | null
+          goal_id: string
+          id: string
+          is_completed: boolean | null
+          target_value: number | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          goal_id: string
+          id?: string
+          is_completed?: boolean | null
+          target_value?: number | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          goal_id?: string
+          id?: string
+          is_completed?: boolean | null
+          target_value?: number | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_checkpoints_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goals: {
+        Row: {
+          color: string | null
+          created_at: string
+          current_value: number | null
+          description: string | null
+          goal_type: string
+          id: string
+          priority: string | null
+          start_date: string
+          status: string
+          target_date: string | null
+          target_value: number | null
+          title: string
+          unit: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          goal_type?: string
+          id?: string
+          priority?: string | null
+          start_date?: string
+          status?: string
+          target_date?: string | null
+          target_value?: number | null
+          title: string
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          goal_type?: string
+          id?: string
+          priority?: string | null
+          start_date?: string
+          status?: string
+          target_date?: string | null
+          target_value?: number | null
+          title?: string
+          unit?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -106,6 +404,75 @@ export type Database = {
           status?: string
           total_records?: number
           type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      important_events: {
+        Row: {
+          created_at: string
+          event_date: string
+          event_type: string
+          id: string
+          is_recurring: boolean | null
+          notes: string | null
+          person_name: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_date: string
+          event_type?: string
+          id?: string
+          is_recurring?: boolean | null
+          notes?: string | null
+          person_name?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_date?: string
+          event_type?: string
+          id?: string
+          is_recurring?: boolean | null
+          notes?: string | null
+          person_name?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payment_methods: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_system: boolean | null
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          name?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -167,6 +534,33 @@ export type Database = {
           last_activity?: string | null
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -235,47 +629,126 @@ export type Database = {
           },
         ]
       }
+      tags: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transaction_tags: {
+        Row: {
+          tag_id: string
+          transaction_id: string
+        }
+        Insert: {
+          tag_id: string
+          transaction_id: string
+        }
+        Update: {
+          tag_id?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_tags_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
+          account_id: string | null
           amount: number
           category_id: string
           created_at: string
           date: string
           id: string
+          installment_group_id: string | null
+          installment_number: number | null
+          installment_total: number | null
           notes: string | null
+          payment_method_id: string | null
           person_id: string
+          project_id: string | null
           subcategory_id: string | null
           type: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          account_id?: string | null
           amount: number
           category_id: string
           created_at?: string
           date: string
           id?: string
+          installment_group_id?: string | null
+          installment_number?: number | null
+          installment_total?: number | null
           notes?: string | null
+          payment_method_id?: string | null
           person_id: string
+          project_id?: string | null
           subcategory_id?: string | null
           type: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          account_id?: string | null
           amount?: number
           category_id?: string
           created_at?: string
           date?: string
           id?: string
+          installment_group_id?: string | null
+          installment_number?: number | null
+          installment_total?: number | null
           notes?: string | null
+          payment_method_id?: string | null
           person_id?: string
+          project_id?: string | null
           subcategory_id?: string | null
           type?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_category_id_fkey"
             columns: ["category_id"]
@@ -284,10 +757,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
@@ -301,20 +788,53 @@ export type Database = {
       }
       user_financial_snapshot: {
         Row: {
-          data: Json
+          categories: Json | null
+          category_trends: Json | null
+          current_month: Json | null
+          ingest_schema: Json | null
+          insights: Json | null
+          monthly_history: Json | null
+          overview: Json | null
+          patrimony: Json | null
           phone: string
+          recent_transactions: Json | null
+          snapshot_version: number | null
+          summary: Json | null
+          transactions: Json | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          data?: Json
+          categories?: Json | null
+          category_trends?: Json | null
+          current_month?: Json | null
+          ingest_schema?: Json | null
+          insights?: Json | null
+          monthly_history?: Json | null
+          overview?: Json | null
+          patrimony?: Json | null
           phone: string
+          recent_transactions?: Json | null
+          snapshot_version?: number | null
+          summary?: Json | null
+          transactions?: Json | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          data?: Json
+          categories?: Json | null
+          category_trends?: Json | null
+          current_month?: Json | null
+          ingest_schema?: Json | null
+          insights?: Json | null
+          monthly_history?: Json | null
+          overview?: Json | null
+          patrimony?: Json | null
           phone?: string
+          recent_transactions?: Json | null
+          snapshot_version?: number | null
+          summary?: Json | null
+          transactions?: Json | null
           updated_at?: string
           user_id?: string
         }
@@ -411,14 +931,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      has_role:
+        | {
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+      normalize_brazilian_phone: { Args: { input: string }; Returns: string }
       rebuild_financial_snapshot: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
+      rebuild_user_snapshot: { Args: { p_user_id: string }; Returns: undefined }
+      seed_default_dimensions: {
         Args: { p_user_id: string }
         Returns: undefined
       }

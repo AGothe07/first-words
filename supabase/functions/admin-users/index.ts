@@ -1,15 +1,28 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  "https://financial.lendscope.com.br",
+  "https://n8n-n8n.czby9f.easypanel.host",
+  "https://id-preview--25132eda-0e5b-447c-9d18-6de3b7514cfb.lovable.app",
+  "https://design-zen-space-45.lovable.app",
+];
+
+function getCorsHeaders(req?: Request) {
+  const origin = req?.headers.get("Origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
+
+let _reqRef: Request | undefined;
 
 function jsonRes(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...getCorsHeaders(_reqRef), "Content-Type": "application/json" },
   });
 }
 
@@ -26,7 +39,8 @@ async function sha256(msg: string): Promise<string> {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  _reqRef = req;
+  if (req.method === "OPTIONS") return new Response(null, { headers: getCorsHeaders(req) });
   if (req.method !== "POST") return jsonRes({ error: "Method not allowed" }, 405);
 
   const authHeader = req.headers.get("Authorization");
@@ -254,6 +268,7 @@ Deno.serve(async (req) => {
         return jsonRes({ error: "Unknown action" }, 400);
     }
   } catch (err) {
-    return jsonRes({ error: (err as Error).message }, 500);
+    console.error("admin-users error:", err);
+    return jsonRes({ error: "Internal server error." }, 500);
   }
 });

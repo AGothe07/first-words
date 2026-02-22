@@ -1,11 +1,22 @@
 import { useFinance } from "@/contexts/FinanceContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Wallet, ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { subMonths, parseISO, isWithinInterval, startOfMonth, endOfMonth, differenceInDays, subDays, startOfYear } from "date-fns";
+
+type AvgMode = "daily" | "weekly" | "monthly";
+
+const avgLabels: Record<AvgMode, string> = {
+  daily: "Diária",
+  weekly: "Semanal",
+  monthly: "Mensal",
+};
+
+const avgOrder: AvgMode[] = ["daily", "weekly", "monthly"];
 
 export function KPICards() {
   const { crossFilteredTransactions, filters } = useFinance();
+  const [avgMode, setAvgMode] = useState<AvgMode>("daily");
 
   const stats = useMemo(() => {
     const expenses = crossFilteredTransactions.filter(t => t.type === "expense");
@@ -21,7 +32,6 @@ export function KPICards() {
       try { return isWithinInterval(parseISO(t.date), { start: prevStart, end: prevEnd }); } catch { return false; }
     }).reduce((s, t) => s + t.amount, 0);
 
-    // Calculate calendar days from the active period filter
     let calendarDays = 1;
     const getPresetRange = (preset: string): { from: Date; to: Date } | null => {
       switch (preset) {
@@ -29,6 +39,7 @@ export function KPICards() {
         case "30d": return { from: subDays(now, 30), to: now };
         case "month": return { from: startOfMonth(now), to: endOfMonth(now) };
         case "year": return { from: startOfYear(now), to: now };
+        case "upto_month": return { from: new Date(2000, 0, 1), to: endOfMonth(now) };
         case "all": return null;
         default: return null;
       }
@@ -44,7 +55,6 @@ export function KPICards() {
         calendarDays = differenceInDays(range.to, range.from) + 1;
       }
     } else {
-      // "all" preset: use min/max dates from transactions
       if (crossFilteredTransactions.length > 0) {
         const dates = crossFilteredTransactions.map(t => t.date).sort();
         const from = parseISO(dates[0]);
@@ -54,19 +64,27 @@ export function KPICards() {
     }
 
     if (calendarDays < 1) calendarDays = 1;
+
     const avgDaily = balance / calendarDays;
+    const avgWeekly = balance / Math.max(calendarDays / 7, 1);
+    const avgMonthly = balance / Math.max(calendarDays / 30, 1);
     const variation = prevExpenses > 0 ? ((totalExpense - prevExpenses) / prevExpenses) * 100 : 0;
 
-    return { totalExpense, totalIncome, balance, avgDaily, variation };
+    return { totalExpense, totalIncome, balance, avgDaily, avgWeekly, avgMonthly, variation };
   }, [crossFilteredTransactions, filters]);
 
   const fmt = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const avgValue = avgMode === "daily" ? stats.avgDaily : avgMode === "weekly" ? stats.avgWeekly : stats.avgMonthly;
+
+  const cycleAvgMode = () => {
+    setAvgMode(prev => avgOrder[(avgOrder.indexOf(prev) + 1) % avgOrder.length]);
+  };
 
   const cards = [
     { label: "Total Receitas", value: fmt(stats.totalIncome), icon: TrendingUp, color: "text-primary", bg: "bg-secondary" },
     { label: "Total Gastos", value: fmt(stats.totalExpense), icon: TrendingDown, color: "text-destructive", bg: "bg-destructive/10" },
     { label: "Saldo", value: fmt(stats.balance), icon: Wallet, color: stats.balance >= 0 ? "text-primary" : "text-destructive", bg: stats.balance >= 0 ? "bg-secondary" : "bg-destructive/10" },
-    { label: "Média Diária", value: fmt(stats.avgDaily), icon: DollarSign, color: stats.avgDaily >= 0 ? "text-primary" : "text-destructive", bg: stats.avgDaily >= 0 ? "bg-secondary" : "bg-destructive/10" },
   ];
 
   return (
@@ -92,6 +110,27 @@ export function KPICards() {
           </CardContent>
         </Card>
       ))}
+
+      {/* Average card with mode toggle */}
+      <Card className="border-border shadow-sm">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <button
+              onClick={cycleAvgMode}
+              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer flex items-center gap-1.5 group"
+            >
+              Média {avgLabels[avgMode]}
+              <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/60">
+                ▸ {avgLabels[avgOrder[(avgOrder.indexOf(avgMode) + 1) % avgOrder.length]]}
+              </span>
+            </button>
+            <div className={`p-2 rounded-lg ${avgValue >= 0 ? "bg-secondary" : "bg-destructive/10"}`}>
+              <DollarSign className={`h-4 w-4 ${avgValue >= 0 ? "text-primary" : "text-destructive"}`} />
+            </div>
+          </div>
+          <p className="text-xl font-bold tracking-tight">{fmt(avgValue)}</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

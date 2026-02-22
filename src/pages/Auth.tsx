@@ -57,7 +57,7 @@ export default function Auth() {
                   <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" />
                 </div>
                 <div>
-55:                   <Label className="text-xs">Senha</Label>
+<Label className="text-xs">Senha</Label>
                   <div className="relative">
                     <Input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••" className="pr-10" />
                     <button type="button" tabIndex={-1} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword(v => !v)}>

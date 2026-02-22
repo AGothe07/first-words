@@ -35,12 +35,22 @@ export interface Transaction {
   person_id: string;
   category_id: string;
   subcategory_id: string | null;
+  payment_method_id?: string | null;
+  account_id?: string | null;
+  project_id?: string | null;
+  installment_group_id?: string | null;
+  installment_number?: number | null;
+  installment_total?: number | null;
   notes?: string;
   created_at: string;
   // Joined fields for display
   person_name?: string;
   category_name?: string;
   subcategory_name?: string;
+  payment_method_name?: string;
+  account_name?: string;
+  project_name?: string;
+  tag_names?: string[];
 }
 
 export interface ImportLog {
@@ -62,4 +72,7 @@ export interface FilterState {
   subcategories: string[];
   type: TransactionType | "all";
   preset: string;
+  paymentMethods: string[];
+  accounts: string[];
+  projects: string[];
 }

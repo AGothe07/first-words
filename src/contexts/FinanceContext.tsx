@@ -5,8 +5,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { startOfMonth, endOfMonth, subDays, startOfYear, format, parseISO, isWithinInterval } from "date-fns";
 import { toast } from "sonner";
 
+export type ChartSelectionType = "category" | "person" | "type" | "subcategory" | "payment_method" | "account" | "project";
+
 export interface ChartSelection {
-  type: "category" | "person" | "type" | "subcategory" | null;
+  type: ChartSelectionType | null;
   ids: string[];
   labels: string[];
 }
@@ -18,10 +20,11 @@ interface FinanceContextType {
   persons: Person[];
   loading: boolean;
   addTransaction: (t: Omit<Transaction, "id" | "user_id" | "created_at">) => Promise<void>;
+  addTransactionsBulk: (items: Omit<Transaction, "id" | "user_id" | "created_at">[]) => Promise<void>;
   updateTransaction: (t: Transaction) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   bulkDeleteTransactions: (ids: string[]) => Promise<void>;
-  addCategory: (name: string, type: TransactionType) => Promise<void>;
+  addCategory: (name: string, type: string) => Promise<void>;
   updateCategory: (id: string, name: string, isActive: boolean) => Promise<void>;
   deleteCategory: (id: string) => Promise<boolean>;
   addSubcategory: (categoryId: string, name: string) => Promise<void>;
@@ -35,7 +38,7 @@ interface FinanceContextType {
   filteredTransactions: Transaction[];
   crossFilteredTransactions: Transaction[];
   chartSelection: ChartSelection;
-  toggleChartSelection: (type: "category" | "person" | "type" | "subcategory", id: string, label: string) => void;
+  toggleChartSelection: (type: ChartSelectionType, id: string, label: string) => void;
   clearChartSelection: () => void;
   drillCategory: string | null;
   setDrillCategory: (c: string | null) => void;
@@ -51,6 +54,9 @@ const defaultFilters: FilterState = {
   subcategories: [],
   type: "all",
   preset: "month",
+  paymentMethods: [],
+  accounts: [],
+  projects: [],
 };
 
 function getPresetRange(preset: string): { from: string; to: string } | null {
@@ -60,6 +66,7 @@ function getPresetRange(preset: string): { from: string; to: string } | null {
     case "30d": return { from: format(subDays(today, 30), "yyyy-MM-dd"), to: format(today, "yyyy-MM-dd") };
     case "month": return { from: format(startOfMonth(today), "yyyy-MM-dd"), to: format(endOfMonth(today), "yyyy-MM-dd") };
     case "year": return { from: format(startOfYear(today), "yyyy-MM-dd"), to: format(today, "yyyy-MM-dd") };
+    case "upto_month": return { from: "2000-01-01", to: format(endOfMonth(today), "yyyy-MM-dd") };
     case "all": return null;
     default: return null;
   }
@@ -77,7 +84,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const [chartSelection, setChartSelection] = useState<ChartSelection>({ type: null, ids: [], labels: [] });
   const clearChartSelection = useCallback(() => setChartSelection({ type: null, ids: [], labels: [] }), []);
 
-  const toggleChartSelection = useCallback((type: "category" | "person" | "type" | "subcategory", id: string, label: string) => {
+  const toggleChartSelection = useCallback((type: ChartSelectionType, id: string, label: string) => {
     setChartSelection(prev => {
       // If switching type, start fresh with this selection
       if (prev.type !== type) {
@@ -100,18 +107,23 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     if (!user) { setLoading(false); return; }
     setLoading(true);
     try {
-      const [txRes, catRes, subRes, perRes] = await Promise.all([
+      const [txRes, catRes, subRes, perRes, pmRes, accRes, projRes] = await Promise.all([
         supabase.from("transactions").select("*").eq("user_id", user.id).order("date", { ascending: false }),
         supabase.from("categories").select("*").eq("user_id", user.id).order("name"),
         supabase.from("subcategories").select("*").eq("user_id", user.id).order("name"),
         supabase.from("persons").select("*").eq("user_id", user.id).order("name"),
+        supabase.from("payment_methods").select("*").eq("user_id", user.id),
+        supabase.from("accounts").select("*").eq("user_id", user.id),
+        supabase.from("projects").select("*").eq("user_id", user.id),
       ]);
 
       if (txRes.data) {
-        // Join names for display
         const catMap = new Map((catRes.data || []).map(c => [c.id, c.name]));
         const subMap = new Map((subRes.data || []).map(s => [s.id, s.name]));
         const perMap = new Map((perRes.data || []).map(p => [p.id, p.name]));
+        const pmMap = new Map((pmRes.data || []).map(p => [p.id, p.name]));
+        const accMap = new Map((accRes.data || []).map(a => [a.id, a.name]));
+        const projMap = new Map((projRes.data || []).map(p => [p.id, p.name]));
         setTransactions(txRes.data.map(t => ({
           ...t,
           type: t.type as TransactionType,
@@ -119,6 +131,9 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
           person_name: perMap.get(t.person_id) || "?",
           category_name: catMap.get(t.category_id) || "?",
           subcategory_name: t.subcategory_id ? subMap.get(t.subcategory_id) || "" : "",
+          payment_method_name: t.payment_method_id ? pmMap.get(t.payment_method_id) || "" : "",
+          account_name: t.account_id ? accMap.get(t.account_id) || "" : "",
+          project_name: t.project_id ? projMap.get(t.project_id) || "" : "",
         })));
       }
       if (catRes.data) setCategories(catRes.data as Category[]);
@@ -135,9 +150,18 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   // Transaction CRUD
   const addTransaction = useCallback(async (t: Omit<Transaction, "id" | "user_id" | "created_at">) => {
     if (!user) return;
-    const { error } = await supabase.from("transactions").insert({ ...t, user_id: user.id });
+    const { error } = await supabase.from("transactions").insert({ ...t, user_id: user.id } as any);
     if (error) { toast.error("Erro ao salvar: " + error.message); return; }
     toast.success("Lançamento adicionado!");
+    await refreshData();
+  }, [user, refreshData]);
+
+  const addTransactionsBulk = useCallback(async (items: Omit<Transaction, "id" | "user_id" | "created_at">[]) => {
+    if (!user || items.length === 0) return;
+    const rows = items.map(t => ({ ...t, user_id: user.id }));
+    const { error } = await supabase.from("transactions").insert(rows as any);
+    if (error) { toast.error("Erro ao salvar parcelas: " + error.message); return; }
+    toast.success(`${items.length} parcela(s) adicionada(s)!`);
     await refreshData();
   }, [user, refreshData]);
 
@@ -146,6 +170,9 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       type: t.type, date: t.date, amount: t.amount,
       person_id: t.person_id, category_id: t.category_id,
       subcategory_id: t.subcategory_id, notes: t.notes,
+      payment_method_id: t.payment_method_id || null,
+      account_id: t.account_id || null,
+      project_id: t.project_id || null,
     }).eq("id", t.id);
     if (error) { toast.error("Erro: " + error.message); return; }
     toast.success("Lançamento atualizado!");
@@ -174,7 +201,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   }, [refreshData]);
 
   // Category CRUD
-  const addCategory = useCallback(async (name: string, type: TransactionType) => {
+  const addCategory = useCallback(async (name: string, type: string) => {
     if (!user) return;
     const { error } = await supabase.from("categories").insert({ name: name.trim(), type, user_id: user.id });
     if (error) { toast.error(error.message.includes("duplicate") ? "Categoria já existe" : error.message); return; }
@@ -266,6 +293,9 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       if (filters.persons.length > 0 && !filters.persons.includes(t.person_id)) return false;
       if (filters.categories.length > 0 && !filters.categories.includes(t.category_id)) return false;
       if (filters.subcategories.length > 0 && t.subcategory_id && !filters.subcategories.includes(t.subcategory_id)) return false;
+      if (filters.paymentMethods.length > 0 && (!t.payment_method_id || !filters.paymentMethods.includes(t.payment_method_id))) return false;
+      if (filters.accounts.length > 0 && (!t.account_id || !filters.accounts.includes(t.account_id))) return false;
+      if (filters.projects.length > 0 && (!t.project_id || !filters.projects.includes(t.project_id))) return false;
       if (range) {
         const d = parseISO(t.date);
         if (!isWithinInterval(d, { start: parseISO(range.from), end: parseISO(range.to) })) return false;
@@ -283,6 +313,9 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         case "person": return chartSelection.ids.includes(t.person_id);
         case "type": return chartSelection.ids.includes(t.type);
         case "subcategory": return t.subcategory_id ? chartSelection.ids.includes(t.subcategory_id) : false;
+        case "payment_method": return t.payment_method_id ? chartSelection.ids.includes(t.payment_method_id) : false;
+        case "account": return t.account_id ? chartSelection.ids.includes(t.account_id) : false;
+        case "project": return t.project_id ? chartSelection.ids.includes(t.project_id) : false;
         default: return true;
       }
     });
@@ -291,7 +324,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   return (
     <FinanceContext.Provider value={{
       transactions, categories, subcategories, persons, loading,
-      addTransaction, updateTransaction, deleteTransaction, bulkDeleteTransactions,
+      addTransaction, addTransactionsBulk, updateTransaction, deleteTransaction, bulkDeleteTransactions,
       addCategory, updateCategory, deleteCategory,
       addSubcategory, updateSubcategory, deleteSubcategory,
       addPerson, updatePerson, deletePerson,
