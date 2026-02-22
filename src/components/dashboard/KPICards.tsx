@@ -49,17 +49,18 @@ export function KPICards() {
       const from = parseISO(filters.dateRange.from);
       const to = parseISO(filters.dateRange.to);
       calendarDays = differenceInDays(to, from) + 1;
-    } else if (filters.preset !== "all") {
-      const range = getPresetRange(filters.preset);
-      if (range) {
-        calendarDays = differenceInDays(range.to, range.from) + 1;
-      }
-    } else {
+    } else if (filters.preset === "upto_month" || filters.preset === "all") {
+      // For "upto_month" and "all", use actual transaction date range instead of arbitrary start
       if (crossFilteredTransactions.length > 0) {
         const dates = crossFilteredTransactions.map(t => t.date).sort();
         const from = parseISO(dates[0]);
         const to = parseISO(dates[dates.length - 1]);
         calendarDays = differenceInDays(to, from) + 1;
+      }
+    } else if (filters.preset !== "all") {
+      const range = getPresetRange(filters.preset);
+      if (range) {
+        calendarDays = differenceInDays(range.to, range.from) + 1;
       }
     }
 
