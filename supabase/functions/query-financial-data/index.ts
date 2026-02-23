@@ -89,6 +89,9 @@ const VALID_FIELDS = [
   "category_trends", "patrimony", "recent_transactions", "insights",
   "ingest_schema",
 ] as const;
+
+// Fields that are stored as text (not JSON)
+const TEXT_FIELDS: Set<string> = new Set(["ingest_schema"]);
 type SnapshotField = typeof VALID_FIELDS[number];
 
 const ALL_SNAPSHOT_COLUMNS = "overview, current_month, monthly_history, categories, category_trends, patrimony, recent_transactions, insights, updated_at";
