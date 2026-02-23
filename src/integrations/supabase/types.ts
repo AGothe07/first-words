@@ -320,13 +320,20 @@ export type Database = {
       }
       goals: {
         Row: {
+          baseline_value: number | null
           color: string | null
           created_at: string
           current_value: number | null
+          data_source: string | null
           description: string | null
           goal_type: string
           id: string
+          period_end: string | null
+          period_start: string | null
+          period_type: string | null
+          person_ids: string[] | null
           priority: string | null
+          progress_mode: string | null
           start_date: string
           status: string
           target_date: string | null
@@ -337,13 +344,20 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          baseline_value?: number | null
           color?: string | null
           created_at?: string
           current_value?: number | null
+          data_source?: string | null
           description?: string | null
           goal_type?: string
           id?: string
+          period_end?: string | null
+          period_start?: string | null
+          period_type?: string | null
+          person_ids?: string[] | null
           priority?: string | null
+          progress_mode?: string | null
           start_date?: string
           status?: string
           target_date?: string | null
@@ -354,13 +368,20 @@ export type Database = {
           user_id: string
         }
         Update: {
+          baseline_value?: number | null
           color?: string | null
           created_at?: string
           current_value?: number | null
+          data_source?: string | null
           description?: string | null
           goal_type?: string
           id?: string
+          period_end?: string | null
+          period_start?: string | null
+          period_type?: string | null
+          person_ids?: string[] | null
           priority?: string | null
+          progress_mode?: string | null
           start_date?: string
           status?: string
           target_date?: string | null

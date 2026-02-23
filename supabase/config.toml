@@ -1,16 +1,1 @@
 project_id = "ydycczdidgmphrrnucim"
-
-[functions.ingest-transaction]
-verify_jwt = false
-
-[functions.admin-users]
-verify_jwt = false
-
-[functions.enable-ai]
-verify_jwt = false
-
-[functions.query-financial-data]
-verify_jwt = false
-
-[functions.external-api]
-verify_jwt = false
