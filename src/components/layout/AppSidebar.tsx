@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, ArrowLeftRight, Tags, UserCog, LogOut, FileUp,
   ShieldAlert, Bot, Landmark, Sliders, Lightbulb, CalendarDays,
-  Target, PartyPopper, ChevronRight, Wallet, Bell
+  Target, PartyPopper, ChevronRight, Wallet, Settings
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -61,10 +61,10 @@ const modules: ModuleConfig[] = [
     ],
   },
   {
-    label: "Notificações",
-    icon: Bell,
+    label: "Configurações",
+    icon: Settings,
     mainItems: [
-      { title: "Config. Notificações", url: "/notification-settings", icon: Bell },
+      { title: "Configurações", url: "/settings", icon: Settings },
     ],
   },
 ];
