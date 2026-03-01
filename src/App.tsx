@@ -23,6 +23,9 @@ import EventsPage from "./pages/EventsPage";
 // AutoMessagesPage removed — functionality centralized in NotificationSettingsPage
 import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import Auth from "./pages/Auth";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -52,6 +55,9 @@ function AppRoutes() {
     <Routes>
       <Route path="/auth" element={user ? <Navigate to="/" replace /> : <Auth />} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/esqueci-senha" element={user ? <Navigate to="/" replace /> : <ForgotPasswordPage />} />
+      <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
+      <Route path="/alterar-senha" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
       <Route path="/insights" element={<ProtectedRoute><InsightsPage /></ProtectedRoute>} />
       <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
       <Route path="/timeline" element={<Navigate to="/" replace />} />
