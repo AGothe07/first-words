@@ -960,6 +960,84 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          birthday_send_time: string | null
+          business_hours_end: string | null
+          business_hours_start: string | null
+          created_at: string | null
+          date_format: string | null
+          default_agenda_view: string | null
+          default_currency: string | null
+          default_event_duration: number | null
+          default_event_notify: boolean | null
+          default_goal_unit: string | null
+          default_person_id: string | null
+          events_send_time: string | null
+          financial_month_start: number | null
+          font_size: string | null
+          goal_progress_mode: string | null
+          id: string
+          layout_density: string | null
+          max_session_hours: number | null
+          notifications_enabled: boolean | null
+          primary_color: string | null
+          theme: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          birthday_send_time?: string | null
+          business_hours_end?: string | null
+          business_hours_start?: string | null
+          created_at?: string | null
+          date_format?: string | null
+          default_agenda_view?: string | null
+          default_currency?: string | null
+          default_event_duration?: number | null
+          default_event_notify?: boolean | null
+          default_goal_unit?: string | null
+          default_person_id?: string | null
+          events_send_time?: string | null
+          financial_month_start?: number | null
+          font_size?: string | null
+          goal_progress_mode?: string | null
+          id?: string
+          layout_density?: string | null
+          max_session_hours?: number | null
+          notifications_enabled?: boolean | null
+          primary_color?: string | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          birthday_send_time?: string | null
+          business_hours_end?: string | null
+          business_hours_start?: string | null
+          created_at?: string | null
+          date_format?: string | null
+          default_agenda_view?: string | null
+          default_currency?: string | null
+          default_event_duration?: number | null
+          default_event_notify?: boolean | null
+          default_goal_unit?: string | null
+          default_person_id?: string | null
+          events_send_time?: string | null
+          financial_month_start?: number | null
+          font_size?: string | null
+          goal_progress_mode?: string | null
+          id?: string
+          layout_density?: string | null
+          max_session_hours?: number | null
+          notifications_enabled?: boolean | null
+          primary_color?: string | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
