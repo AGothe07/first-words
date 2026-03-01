@@ -5,6 +5,9 @@ const ALLOWED_ORIGINS = [
   "https://n8n-n8n.czby9f.easypanel.host",
   "https://id-preview--25132eda-0e5b-447c-9d18-6de3b7514cfb.lovable.app",
   "https://design-zen-space-45.lovable.app",
+  "https://id-preview--eb4ac121-e216-4641-a442-c6aff99bb8f1.lovable.app",
+  "https://simple-hello-spark-59.lovable.app",
+  "https://eb4ac121-e216-4641-a442-c6aff99bb8f1.lovableproject.com",
 ];
 
 function getCorsHeaders(req?: Request) {
