@@ -20,7 +20,8 @@ import InsightsPage from "./pages/InsightsPage";
 import AgendaPage from "./pages/AgendaPage";
 import GoalsPage from "./pages/GoalsPage";
 import EventsPage from "./pages/EventsPage";
-import AutoMessagesPage from "./pages/AutoMessagesPage";
+// AutoMessagesPage removed — functionality centralized in NotificationSettingsPage
+import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
@@ -66,7 +67,8 @@ function AppRoutes() {
       <Route path="/agenda" element={<ProtectedRoute><AgendaPage /></ProtectedRoute>} />
       <Route path="/goals" element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
       <Route path="/events" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
-      <Route path="/auto-messages" element={<ProtectedRoute><AutoMessagesPage /></ProtectedRoute>} />
+      <Route path="/auto-messages" element={<Navigate to="/notification-settings" replace />} />
+      <Route path="/notification-settings" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

@@ -47,15 +47,22 @@ export type Database = {
       agenda_items: {
         Row: {
           all_day: boolean | null
+          auto_notify: boolean | null
           color: string | null
           created_at: string
           description: string | null
           end_date: string | null
           id: string
           item_type: string
+          phone: string | null
           priority: string | null
           recurrence: string | null
           recurrence_end: string | null
+          recurrence_interval: number | null
+          recurrence_type: string
+          recurrence_weekdays: string | null
+          reminder_unit: string | null
+          reminder_value: number | null
           start_date: string
           status: string
           title: string
@@ -64,15 +71,22 @@ export type Database = {
         }
         Insert: {
           all_day?: boolean | null
+          auto_notify?: boolean | null
           color?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
           id?: string
           item_type?: string
+          phone?: string | null
           priority?: string | null
           recurrence?: string | null
           recurrence_end?: string | null
+          recurrence_interval?: number | null
+          recurrence_type?: string
+          recurrence_weekdays?: string | null
+          reminder_unit?: string | null
+          reminder_value?: number | null
           start_date: string
           status?: string
           title: string
@@ -81,15 +95,22 @@ export type Database = {
         }
         Update: {
           all_day?: boolean | null
+          auto_notify?: boolean | null
           color?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
           id?: string
           item_type?: string
+          phone?: string | null
           priority?: string | null
           recurrence?: string | null
           recurrence_end?: string | null
+          recurrence_interval?: number | null
+          recurrence_type?: string
+          recurrence_weekdays?: string | null
+          reminder_unit?: string | null
+          reminder_value?: number | null
           start_date?: string
           status?: string
           title?: string
@@ -431,6 +452,7 @@ export type Database = {
       }
       important_events: {
         Row: {
+          auto_notify: boolean | null
           created_at: string
           event_date: string
           event_type: string
@@ -438,11 +460,13 @@ export type Database = {
           is_recurring: boolean | null
           notes: string | null
           person_name: string | null
+          phone: string | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          auto_notify?: boolean | null
           created_at?: string
           event_date: string
           event_type?: string
@@ -450,11 +474,13 @@ export type Database = {
           is_recurring?: boolean | null
           notes?: string | null
           person_name?: string | null
+          phone?: string | null
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          auto_notify?: boolean | null
           created_at?: string
           event_date?: string
           event_type?: string
@@ -462,8 +488,81 @@ export type Database = {
           is_recurring?: boolean | null
           notes?: string | null
           person_name?: string | null
+          phone?: string | null
           title?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_log: {
+        Row: {
+          event_date: string
+          id: string
+          send_type: string
+          sent_at: string | null
+          source_id: string
+          source_type: string
+          user_id: string
+          webhook_status: number | null
+        }
+        Insert: {
+          event_date: string
+          id?: string
+          send_type: string
+          sent_at?: string | null
+          source_id: string
+          source_type: string
+          user_id: string
+          webhook_status?: number | null
+        }
+        Update: {
+          event_date?: string
+          id?: string
+          send_type?: string
+          sent_at?: string | null
+          source_id?: string
+          source_type?: string
+          user_id?: string
+          webhook_status?: number | null
+        }
+        Relationships: []
+      }
+      notification_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          message_template: string
+          send_both: boolean | null
+          send_days_before: number | null
+          send_on_day: boolean | null
+          setting_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message_template?: string
+          send_both?: boolean | null
+          send_days_before?: number | null
+          send_on_day?: boolean | null
+          setting_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message_template?: string
+          send_both?: boolean | null
+          send_days_before?: number | null
+          send_on_day?: boolean | null
+          setting_type?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -812,7 +911,7 @@ export type Database = {
           categories: Json | null
           category_trends: Json | null
           current_month: Json | null
-          ingest_schema: Json | null
+          ingest_schema: string | null
           insights: Json | null
           monthly_history: Json | null
           overview: Json | null
@@ -829,7 +928,7 @@ export type Database = {
           categories?: Json | null
           category_trends?: Json | null
           current_month?: Json | null
-          ingest_schema?: Json | null
+          ingest_schema?: string | null
           insights?: Json | null
           monthly_history?: Json | null
           overview?: Json | null
@@ -846,7 +945,7 @@ export type Database = {
           categories?: Json | null
           category_trends?: Json | null
           current_month?: Json | null
-          ingest_schema?: Json | null
+          ingest_schema?: string | null
           insights?: Json | null
           monthly_history?: Json | null
           overview?: Json | null
@@ -884,6 +983,7 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
+          function_key: string | null
           id: string
           is_active: boolean
           updated_at: string
@@ -893,6 +993,7 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
+          function_key?: string | null
           id?: string
           is_active?: boolean
           updated_at?: string
@@ -902,6 +1003,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
+          function_key?: string | null
           id?: string
           is_active?: boolean
           updated_at?: string
@@ -947,6 +1049,36 @@ export type Database = {
           },
         ]
       }
+      whatsapp_instances: {
+        Row: {
+          created_at: string
+          id: string
+          instance_name: string | null
+          status: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instance_name?: string | null
+          status?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instance_name?: string | null
+          status?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -969,6 +1101,10 @@ export type Database = {
           }
       normalize_brazilian_phone: { Args: { input: string }; Returns: string }
       rebuild_financial_snapshot: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
+      rebuild_ingest_schema_for_user: {
         Args: { p_user_id: string }
         Returns: undefined
       }

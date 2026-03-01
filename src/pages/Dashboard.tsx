@@ -10,6 +10,7 @@ import { CumulativeBalanceChart } from "@/components/dashboard/CumulativeBalance
 import { PersonTimelineChart } from "@/components/dashboard/PersonTimelineChart";
 import { WeekdayChart } from "@/components/dashboard/WeekdayChart";
 import { DimensionChart } from "@/components/dashboard/DimensionChart";
+import { TransactionListCard } from "@/components/dashboard/TransactionListCard";
 import { TransactionForm } from "@/components/transactions/TransactionForm";
 import { useFinance } from "@/contexts/FinanceContext";
 import { useDimensions } from "@/contexts/DimensionsContext";
@@ -104,6 +105,11 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <CumulativeBalanceChart />
         <WeekdayChart />
+      </div>
+
+      {/* Card de transações dinâmico */}
+      <div className="mb-4">
+        <TransactionListCard />
       </div>
     </AppLayout>
   );

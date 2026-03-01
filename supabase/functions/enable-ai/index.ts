@@ -252,8 +252,8 @@ Deno.serve(async (req) => {
         const { data: wh } = await svc
           .from("webhook_configs")
           .select("id, url")
+          .eq("function_key", "whatsapp_code")
           .eq("is_active", true)
-          .limit(1)
           .maybeSingle();
         if (!wh)
           return jsonRes(

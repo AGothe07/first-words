@@ -1,7 +1,8 @@
 import { useFinance } from "@/contexts/FinanceContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
+import { TransactionType } from "@/types/finance";
 
 const COLORS = [
   "hsl(168,80%,36%)", "hsl(199,89%,48%)", "hsl(262,52%,47%)", "hsl(38,92%,50%)",
@@ -11,31 +12,31 @@ const COLORS = [
 
 export function CategoryRankingChart() {
   const { crossFilteredTransactions, filteredTransactions, chartSelection, toggleChartSelection } = useFinance();
+  const [viewType, setViewType] = useState<TransactionType>("expense");
 
-  // Stable color map from all filtered data
   const categoryColorMap = useMemo(() => {
     const map: Record<string, string> = {};
     const seen = new Set<string>();
-    filteredTransactions.filter(t => t.type === "expense").forEach(t => {
+    filteredTransactions.filter(t => t.type === viewType).forEach(t => {
       if (!seen.has(t.category_id)) {
         map[t.category_id] = COLORS[seen.size % COLORS.length];
         seen.add(t.category_id);
       }
     });
     return map;
-  }, [filteredTransactions]);
+  }, [filteredTransactions, viewType]);
 
   const sourceTransactions = chartSelection.type === "category" ? filteredTransactions : crossFilteredTransactions;
 
   const data = useMemo(() => {
     const byCat: Record<string, { name: string; total: number; id: string }> = {};
-    sourceTransactions.filter(t => t.type === "expense").forEach(t => {
+    sourceTransactions.filter(t => t.type === viewType).forEach(t => {
       const name = t.category_name || "?";
       if (!byCat[t.category_id]) byCat[t.category_id] = { name, total: 0, id: t.category_id };
       byCat[t.category_id].total += t.amount;
     });
     return Object.values(byCat).sort((a, b) => b.total - a.total).slice(0, 10);
-  }, [sourceTransactions]);
+  }, [sourceTransactions, viewType]);
 
   const fmt = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const hasSelection = chartSelection.type === "category" && chartSelection.ids.length > 0;
@@ -44,10 +45,28 @@ export function CategoryRankingChart() {
     toggleChartSelection("category", d.id, d.name);
   };
 
+  const titleLabel = viewType === "expense" ? "Gastos" : "Receitas";
+
   return (
     <Card className="border-border shadow-sm">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold">🏆 Ranking de Categorias</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-semibold">🏆 Ranking de {titleLabel}</CardTitle>
+          <div className="flex rounded-md border border-border overflow-hidden text-xs">
+            <button
+              onClick={() => setViewType("expense")}
+              className={`px-2 py-1 transition-colors ${viewType === "expense" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
+            >
+              Gastos
+            </button>
+            <button
+              onClick={() => setViewType("income")}
+              className={`px-2 py-1 transition-colors ${viewType === "income" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
+            >
+              Receitas
+            </button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (

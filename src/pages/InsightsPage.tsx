@@ -175,6 +175,8 @@ function useMonthlyData(selectedPersonIds: string[], periodFilter: PeriodFilter)
 
   return useMemo(() => {
     const periodRange = getInsightsPeriodRange(periodFilter);
+    const today = new Date();
+    const currentMonthEnd = endOfMonth(today);
 
     // Filter transactions by selected persons
     let filtered = selectedPersonIds.length > 0
@@ -189,6 +191,10 @@ function useMonthlyData(selectedPersonIds: string[], periodFilter: PeriodFilter)
       });
     }
 
+    // IMPORTANT: Only include transactions up to the current month end for analysis
+    // Future transactions are handled separately
+    filtered = filtered.filter(t => parseISO(t.date) <= currentMonthEnd);
+
     // Combine transaction dates AND asset dates to determine the full timeline
     const txDates = filtered.map(t => t.date);
     const assetDates = assets.map(a => a.date);
@@ -202,10 +208,14 @@ function useMonthlyData(selectedPersonIds: string[], periodFilter: PeriodFilter)
       });
     }
 
+    // Cap at current month
+    allDates = allDates.filter(d => parseISO(d) <= currentMonthEnd);
+
     if (allDates.length === 0) return [];
 
     const minDate = startOfMonth(parseISO(allDates[0]));
-    const maxDate = endOfMonth(parseISO(allDates[allDates.length - 1]));
+    // Always cap at the current calendar month, never go beyond
+    const maxDate = currentMonthEnd;
     const months = differenceInMonths(maxDate, minDate) + 1;
 
     // Build carry-forward patrimony: for each month, use latest known value per category up to that month
@@ -244,6 +254,40 @@ function useMonthlyData(selectedPersonIds: string[], periodFilter: PeriodFilter)
 
     return data;
   }, [transactions, assets, selectedPersonIds, periodFilter]);
+}
+
+// ─── Future transactions hook ──────────────────────────────────────
+interface FutureTransaction {
+  id: string;
+  date: string;
+  amount: number;
+  type: string;
+  category_name?: string;
+  subcategory_name?: string;
+  person_name?: string;
+  notes?: string;
+}
+
+function useFutureTransactions(selectedPersonIds: string[]): { transactions: FutureTransaction[]; totalExpense: number; totalIncome: number } {
+  const { transactions } = useFinance();
+
+  return useMemo(() => {
+    const today = new Date();
+    const currentMonthEnd = endOfMonth(today);
+
+    let filtered = selectedPersonIds.length > 0
+      ? transactions.filter(t => selectedPersonIds.includes(t.person_id))
+      : transactions;
+
+    const future = filtered
+      .filter(t => parseISO(t.date) > currentMonthEnd)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const totalExpense = future.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+    const totalIncome = future.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
+
+    return { transactions: future, totalExpense, totalIncome };
+  }, [transactions, selectedPersonIds]);
 }
 
 // ─── Insight Generator ─────────────────────────────────────────────
@@ -467,6 +511,95 @@ function MonthlyReport({ monthlyData }: { monthlyData: MonthlyRow[] }) {
   );
 }
 
+// ─── Future Expenses Card ──────────────────────────────────────────
+function FutureExpensesCard({ selectedPersonIds }: { selectedPersonIds: string[] }) {
+  const { transactions: futureTx, totalExpense, totalIncome } = useFutureTransactions(selectedPersonIds);
+
+  if (futureTx.length === 0) return null;
+
+  // Group by month
+  const byMonth: Record<string, FutureTransaction[]> = {};
+  futureTx.forEach(t => {
+    const key = format(parseISO(t.date), "yyyy-MM");
+    if (!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push(t);
+  });
+
+  const sortedMonths = Object.keys(byMonth).sort();
+
+  return (
+    <Card className="border-border shadow-sm border-l-4 border-l-warning">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-warning" />
+          Compromissos Futuros
+          <span className="text-[10px] font-normal text-muted-foreground ml-1">
+            ({futureTx.length} lançamento{futureTx.length > 1 ? "s" : ""} após este mês)
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          {totalExpense > 0 && (
+            <div>
+              <p className="text-xs text-muted-foreground">Despesas futuras</p>
+              <p className="text-sm font-bold text-destructive">{fmt(totalExpense)}</p>
+            </div>
+          )}
+          {totalIncome > 0 && (
+            <div>
+              <p className="text-xs text-muted-foreground">Receitas futuras</p>
+              <p className="text-sm font-bold text-primary">{fmt(totalIncome)}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+          {sortedMonths.map(monthKey => {
+            const txs = byMonth[monthKey];
+            const monthLabel = format(parseISO(monthKey + "-01"), "MMMM 'de' yyyy", { locale: ptBR });
+            const monthExpense = txs.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+            const monthIncome = txs.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
+
+            return (
+              <div key={monthKey}>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs font-semibold capitalize">{monthLabel}</p>
+                  <div className="flex gap-2 text-[10px]">
+                    {monthExpense > 0 && <span className="text-destructive">-{fmt(monthExpense)}</span>}
+                    {monthIncome > 0 && <span className="text-primary">+{fmt(monthIncome)}</span>}
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  {txs.map(t => (
+                    <div key={t.id} className="flex items-center justify-between text-xs py-0.5 border-b border-border/30 last:border-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-muted-foreground shrink-0">
+                          {format(parseISO(t.date), "dd/MM")}
+                        </span>
+                        <span className="truncate">{t.category_name}</span>
+                        {t.subcategory_name && (
+                          <span className="text-[10px] text-muted-foreground truncate">/ {t.subcategory_name}</span>
+                        )}
+                        {t.person_name && (
+                          <span className="text-[10px] text-muted-foreground">({t.person_name})</span>
+                        )}
+                      </div>
+                      <span className={`shrink-0 font-medium tabular-nums ${t.type === "income" ? "text-primary" : "text-destructive"}`}>
+                        {t.type === "income" ? "+" : "-"}{fmt(t.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────
 export default function InsightsPage() {
   const { persons } = useFinance();
@@ -533,6 +666,11 @@ export default function InsightsPage() {
               ))}
             </div>
           )}
+
+          {/* Future Expenses */}
+          <div className="mb-4">
+            <FutureExpensesCard selectedPersonIds={selectedPersonIds} />
+          </div>
 
           {/* Charts row 1: Cumulative balance + Patrimony */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
@@ -672,6 +810,7 @@ export default function InsightsPage() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+
         </>
       )}
     </AppLayout>

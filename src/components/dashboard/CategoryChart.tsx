@@ -1,7 +1,8 @@
 import { useFinance } from "@/contexts/FinanceContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { TransactionType } from "@/types/finance";
 
 const COLORS = [
   "hsl(168,80%,36%)", "hsl(199,89%,48%)", "hsl(262,52%,47%)", "hsl(38,92%,50%)",
@@ -10,31 +11,29 @@ const COLORS = [
 ];
 
 export function CategoryChart() {
-  const { crossFilteredTransactions, filteredTransactions, drillCategory, setDrillCategory, categories, chartSelection, toggleChartSelection, clearChartSelection } = useFinance();
+  const { crossFilteredTransactions, filteredTransactions, drillCategory, setDrillCategory, categories, chartSelection, toggleChartSelection } = useFinance();
+  const [viewType, setViewType] = useState<TransactionType>("expense");
 
-  // Use filteredTransactions (not cross-filtered) so this chart shows all categories,
-  // dimming unselected ones rather than hiding them
   const sourceTransactions = chartSelection.type === "category" ? filteredTransactions : crossFilteredTransactions;
 
-  // Build a stable color map based on ALL categories from filteredTransactions
   const categoryColorMap = useMemo(() => {
     const map: Record<string, string> = {};
     const seen = new Set<string>();
-    filteredTransactions.filter(t => t.type === "expense").forEach(t => {
+    filteredTransactions.filter(t => t.type === viewType).forEach(t => {
       if (!seen.has(t.category_id)) {
         map[t.category_id] = COLORS[seen.size % COLORS.length];
         seen.add(t.category_id);
       }
     });
     return map;
-  }, [filteredTransactions]);
+  }, [filteredTransactions, viewType]);
 
   const data = useMemo(() => {
-    const expenses = sourceTransactions.filter(t => t.type === "expense");
+    const items = sourceTransactions.filter(t => t.type === viewType);
 
     if (drillCategory) {
       const subs: Record<string, number> = {};
-      expenses.filter(t => t.category_id === drillCategory).forEach(t => {
+      items.filter(t => t.category_id === drillCategory).forEach(t => {
         const name = t.subcategory_name || "Sem subcategoria";
         subs[name] = (subs[name] || 0) + t.amount;
       });
@@ -44,19 +43,18 @@ export function CategoryChart() {
     }
 
     const macro: Record<string, { name: string; value: number; id: string }> = {};
-    expenses.forEach(t => {
+    items.forEach(t => {
       const catName = t.category_name || "?";
       if (!macro[t.category_id]) macro[t.category_id] = { name: catName, value: 0, id: t.category_id };
       macro[t.category_id].value += t.amount;
     });
     return Object.values(macro).sort((a, b) => b.value - a.value);
-  }, [sourceTransactions, drillCategory]);
+  }, [sourceTransactions, drillCategory, viewType]);
 
   const total = data.reduce((s, d) => s + d.value, 0);
   const fmt = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   const drillCatName = drillCategory ? categories.find(c => c.id === drillCategory)?.name : null;
-
   const hasSelection = chartSelection.type === "category" && chartSelection.ids.length > 0;
 
   const handleClick = (d: { name: string; value: number; id: string }) => {
@@ -74,18 +72,36 @@ export function CategoryChart() {
     return chartSelection.ids.includes(d.id) ? 1 : 0.25;
   };
 
+  const titleLabel = viewType === "expense" ? "Gastos" : "Receitas";
+
   return (
     <Card className="border-border shadow-sm">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold">
-            {drillCatName ? `📂 ${drillCatName}` : "Gastos por Categoria"}
+            {drillCatName ? `📂 ${drillCatName}` : `${titleLabel} por Categoria`}
           </CardTitle>
-          {drillCategory && (
-            <button onClick={() => setDrillCategory(null)} className="text-xs text-primary hover:underline">
-              ← Voltar
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {drillCategory && (
+              <button onClick={() => setDrillCategory(null)} className="text-xs text-primary hover:underline">
+                ← Voltar
+              </button>
+            )}
+            <div className="flex rounded-md border border-border overflow-hidden text-xs">
+              <button
+                onClick={() => setViewType("expense")}
+                className={`px-2 py-1 transition-colors ${viewType === "expense" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
+              >
+                Gastos
+              </button>
+              <button
+                onClick={() => setViewType("income")}
+                className={`px-2 py-1 transition-colors ${viewType === "income" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
+              >
+                Receitas
+              </button>
+            </div>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -100,11 +116,7 @@ export function CategoryChart() {
                     onClick={(_, i) => handleClick(data[i])}
                     className="cursor-pointer">
                     {data.map((d, i) => (
-                      <Cell
-                        key={i}
-                        fill={getColor(d, i)}
-                        opacity={getOpacity(d)}
-                      />
+                      <Cell key={i} fill={getColor(d, i)} opacity={getOpacity(d)} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(v: number) => fmt(v)} />

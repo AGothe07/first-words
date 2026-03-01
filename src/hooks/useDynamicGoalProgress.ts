@@ -1,15 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { Goal } from "@/types/goals";
 import { useAssets } from "@/contexts/AssetsContext";
 import { useFinance } from "@/contexts/FinanceContext";
+import { supabase } from "@/integrations/supabase/client";
 import { parseISO, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval } from "date-fns";
 
-export function useDynamicGoalProgress(goals: Goal[]) {
+export function useDynamicGoalProgress(goals: Goal[], onGoalCompleted?: () => void) {
   const { assets } = useAssets();
   const { transactions } = useFinance();
+  const completedRef = useRef<Set<string>>(new Set());
 
   const currentAssetTotal = useMemo(() => {
-    // Get latest value per category
     const latestByCategory = new Map<string, number>();
     const sorted = [...assets].sort((a, b) => b.date.localeCompare(a.date));
     for (const a of sorted) {
@@ -36,7 +37,6 @@ export function useDynamicGoalProgress(goals: Goal[]) {
         if (personFilter) {
           filtered = filtered.filter((t) => personFilter.includes(t.person_id));
         }
-        // Apply period filter
         if (goal.period_type === "monthly") {
           const now = new Date();
           const monthStart = startOfMonth(now);
@@ -73,9 +73,32 @@ export function useDynamicGoalProgress(goals: Goal[]) {
         }, 0);
       }
 
-      return { ...goal, current_value: currentValue };
+      // Auto-detect completion
+      const isCompleted = goal.target_value != null && currentValue >= goal.target_value;
+      return {
+        ...goal,
+        current_value: currentValue,
+        status: isCompleted && goal.status === "active" ? "completed" : goal.status,
+      };
     });
   }, [goals, currentAssetTotal, transactions]);
+
+  // Persist auto-completion to DB
+  useEffect(() => {
+    for (const goal of enrichedGoals) {
+      if (
+        goal.data_source &&
+        goal.status === "completed" &&
+        goals.find(g => g.id === goal.id)?.status === "active" &&
+        !completedRef.current.has(goal.id)
+      ) {
+        completedRef.current.add(goal.id);
+        supabase.from("goals").update({ status: "completed", current_value: goal.current_value }).eq("id", goal.id).then(() => {
+          onGoalCompleted?.();
+        });
+      }
+    }
+  }, [enrichedGoals, goals, onGoalCompleted]);
 
   return enrichedGoals;
 }
@@ -92,17 +115,14 @@ export function calculateDynamicProgress(goal: Goal): number {
     return Math.min(100, (current / target) * 100);
   }
 
-  // Asset and Balance goals: progress based on growth from baseline
-  const growthNeeded = target - baseline;
-  if (growthNeeded <= 0) return current >= target ? 100 : 0;
-
-  const growthAchieved = current - baseline;
-
   if (goal.progress_mode === "remaining") {
-    // Mode 2: starts at 0%, represents how much of "what was missing" has been achieved
+    // Mode 2: progress based on growth from baseline
+    const growthNeeded = target - baseline;
+    if (growthNeeded <= 0) return current >= target ? 100 : 0;
+    const growthAchieved = current - baseline;
     return Math.max(0, Math.min(100, (growthAchieved / growthNeeded) * 100));
   }
 
-  // Mode 1 (evolution): same calculation, represents growth achieved
-  return Math.max(0, Math.min(100, (growthAchieved / growthNeeded) * 100));
+  // Mode 1 (evolution): progress is current / target directly
+  return Math.max(0, Math.min(100, (current / target) * 100));
 }

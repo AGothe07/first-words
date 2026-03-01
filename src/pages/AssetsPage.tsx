@@ -7,6 +7,7 @@ import { AssetKPICards } from "@/components/assets/AssetKPICards";
 import { AssetTimelineChart } from "@/components/assets/AssetTimelineChart";
 import { AssetDistributionChart } from "@/components/assets/AssetDistributionChart";
 import { AssetGrowthChart } from "@/components/assets/AssetGrowthChart";
+import { QuickAssetUpdate } from "@/components/assets/QuickAssetUpdate";
 
 export default function AssetsPage() {
   return (
@@ -16,7 +17,10 @@ export default function AssetsPage() {
           <h1 className="text-xl font-bold tracking-tight">Patrimônio</h1>
           <p className="text-sm text-muted-foreground">Registre e acompanhe a evolução do seu patrimônio</p>
         </div>
-        <AssetForm />
+        <div className="flex gap-2">
+          <QuickAssetUpdate />
+          <AssetForm />
+        </div>
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">

@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, ArrowLeftRight, Tags, UserCog, LogOut, FileUp,
   ShieldAlert, Bot, Landmark, Sliders, Lightbulb, CalendarDays,
-  Target, PartyPopper, MessageSquareHeart, ChevronRight, Wallet
+  Target, PartyPopper, ChevronRight, Wallet, Bell
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -58,7 +58,13 @@ const modules: ModuleConfig[] = [
     icon: PartyPopper,
     mainItems: [
       { title: "Datas Importantes", url: "/events", icon: PartyPopper },
-      { title: "Mensagens Automáticas", url: "/auto-messages", icon: MessageSquareHeart },
+    ],
+  },
+  {
+    label: "Notificações",
+    icon: Bell,
+    mainItems: [
+      { title: "Config. Notificações", url: "/notification-settings", icon: Bell },
     ],
   },
 ];

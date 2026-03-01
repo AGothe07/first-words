@@ -99,7 +99,11 @@ export default function AutoMessagesPage() {
               <DialogHeader><DialogTitle>Nova Mensagem Automática</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 <Input placeholder="Título (ex: Feliz Aniversário)" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
-                <Select value={form.event_id || "none"} onValueChange={v => setForm(f => ({ ...f, event_id: v === "none" ? "" : v }))}>
+                <Select value={form.event_id || "none"} onValueChange={v => {
+                  const eventId = v === "none" ? "" : v;
+                  const linkedEvt = events.find(e => e.id === eventId);
+                  setForm(f => ({ ...f, event_id: eventId, ...(linkedEvt ? {} : {}) }));
+                }}>
                   <SelectTrigger><SelectValue placeholder="Vincular a evento (opcional)" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Sem vínculo</SelectItem>

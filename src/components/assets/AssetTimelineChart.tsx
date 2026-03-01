@@ -12,11 +12,22 @@ export function AssetTimelineChart() {
   const data = useMemo(() => {
     if (filteredAssets.length === 0) return [];
 
-    // Group by month, sum all categories
-    const byMonth = new Map<string, number>();
+    // For each month+category, keep only the latest entry (by date)
+    const latestByCatMonth = new Map<string, { value: number; date: string }>();
     filteredAssets.forEach(a => {
-      const month = a.date.slice(0, 7); // yyyy-MM
-      byMonth.set(month, (byMonth.get(month) || 0) + a.value);
+      const month = a.date.slice(0, 7);
+      const key = `${month}|${a.category}`;
+      const existing = latestByCatMonth.get(key);
+      if (!existing || a.date > existing.date) {
+        latestByCatMonth.set(key, { value: a.value, date: a.date });
+      }
+    });
+
+    // Sum latest values per category for each month
+    const byMonth = new Map<string, number>();
+    latestByCatMonth.forEach(({ value }, key) => {
+      const month = key.split("|")[0];
+      byMonth.set(month, (byMonth.get(month) || 0) + value);
     });
 
     return Array.from(byMonth.entries())

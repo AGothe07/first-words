@@ -11,10 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Target, Zap } from "lucide-react";
-import { Goal } from "@/types/goals";
+import { Goal, GoalProgressMode } from "@/types/goals";
 import { GoalCard } from "@/components/goals/GoalCard";
 import { DynamicGoalForm } from "@/components/goals/DynamicGoalForm";
 import { useDynamicGoalProgress } from "@/hooks/useDynamicGoalProgress";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 export default function GoalsPage() {
   const { user } = useAuth();
@@ -22,7 +24,9 @@ export default function GoalsPage() {
   const [loading, setLoading] = useState(true);
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
   const [dynamicDialogOpen, setDynamicDialogOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", goal_type: "personal", target_value: "", unit: "", target_date: "" });
+  const [form, setForm] = useState({ title: "", description: "", goal_type: "personal", target_value: "", unit: "", target_date: "", progress_mode: "evolution" as GoalProgressMode, baseline_value: "" });
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [editForm, setEditForm] = useState({ title: "", description: "", target_value: "", current_value: "", unit: "", target_date: "", progress_mode: "evolution" as GoalProgressMode });
 
   const fetchGoals = useCallback(async () => {
     if (!user) return;
@@ -34,23 +38,62 @@ export default function GoalsPage() {
   useEffect(() => { fetchGoals(); }, [fetchGoals]);
 
   // Enrich dynamic goals with real-time progress
-  const enrichedGoals = useDynamicGoalProgress(goals);
+  const enrichedGoals = useDynamicGoalProgress(goals, fetchGoals);
 
   const handleAddManual = async () => {
     if (!user || !form.title.trim()) return;
+    const baselineVal = form.baseline_value ? Number(form.baseline_value) : null;
     const { error } = await supabase.from("goals").insert({
       user_id: user.id,
       title: form.title,
       description: form.description || null,
       goal_type: form.goal_type,
       target_value: form.target_value ? Number(form.target_value) : null,
+      current_value: baselineVal,
+      baseline_value: baselineVal,
+      progress_mode: form.progress_mode,
       unit: form.unit || null,
       target_date: form.target_date || null,
     });
     if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Meta criada!" });
-    setForm({ title: "", description: "", goal_type: "personal", target_value: "", unit: "", target_date: "" });
+    setForm({ title: "", description: "", goal_type: "personal", target_value: "", unit: "", target_date: "", progress_mode: "evolution", baseline_value: "" });
     setManualDialogOpen(false);
+    fetchGoals();
+  };
+
+  const startEditing = (goal: Goal) => {
+    setEditingGoal(goal);
+    setEditForm({
+      title: goal.title,
+      description: goal.description || "",
+      target_value: String(goal.target_value || ""),
+      current_value: String(goal.current_value || ""),
+      unit: goal.unit || "",
+      target_date: goal.target_date || "",
+      progress_mode: goal.progress_mode || "evolution",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingGoal) return;
+    const val = editForm.current_value ? Number(editForm.current_value) : null;
+    const targetVal = editForm.target_value ? Number(editForm.target_value) : null;
+    const isComplete = targetVal != null && val != null && val >= targetVal;
+    const { error } = await supabase.from("goals").update({
+      title: editForm.title,
+      description: editForm.description || null,
+      target_value: targetVal,
+      current_value: val,
+      unit: editForm.unit || null,
+      target_date: editForm.target_date || null,
+      progress_mode: editForm.progress_mode,
+      ...(isComplete ? { status: "completed" } : {}),
+    }).eq("id", editingGoal.id);
+    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Meta atualizada!" });
+    if (isComplete) toast({ title: "🎉 Meta alcançada!" });
+    setEditingGoal(null);
     fetchGoals();
   };
 
@@ -79,7 +122,7 @@ export default function GoalsPage() {
   };
 
   const updateProgress = async (goal: Goal, val: number) => {
-    const isComplete = goal.target_value && val >= goal.target_value;
+    const isComplete = goal.target_value != null && val >= goal.target_value;
     await supabase.from("goals").update({
       current_value: val,
       ...(isComplete ? { status: "completed" } : {}),
@@ -98,9 +141,17 @@ export default function GoalsPage() {
     fetchGoals();
   };
 
-  const activeGoals = enrichedGoals.filter(g => g.status === "active");
-  const pausedGoals = enrichedGoals.filter(g => g.status === "paused");
-  const completedGoals = enrichedGoals.filter(g => g.status === "completed");
+  // Sort by nearest deadline first, no-deadline last, then by created_at
+  const sortByDeadline = (a: Goal, b: Goal) => {
+    if (a.target_date && b.target_date) return a.target_date.localeCompare(b.target_date);
+    if (a.target_date && !b.target_date) return -1;
+    if (!a.target_date && b.target_date) return 1;
+    return (a.created_at || "").localeCompare(b.created_at || "");
+  };
+
+  const activeGoals = enrichedGoals.filter(g => g.status === "active").sort(sortByDeadline);
+  const pausedGoals = enrichedGoals.filter(g => g.status === "paused").sort(sortByDeadline);
+  const completedGoals = enrichedGoals.filter(g => g.status === "completed").sort(sortByDeadline);
 
   const dynamicCount = enrichedGoals.filter(g => g.data_source).length;
   const manualCount = enrichedGoals.filter(g => !g.data_source).length;
@@ -141,7 +192,7 @@ export default function GoalsPage() {
               <DialogTrigger asChild>
                 <Button><Plus className="h-4 w-4 mr-2" /> Nova Meta</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader><DialogTitle>Nova Meta Manual</DialogTitle></DialogHeader>
                 <div className="space-y-4">
                   <Input placeholder="Título da meta" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
@@ -187,8 +238,79 @@ export default function GoalsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Input type="date" value={form.target_date} onChange={e => setForm(f => ({ ...f, target_date: e.target.value }))} />
+                  <div>
+                    <Label className="text-xs">Valor atual / inicial (opcional)</Label>
+                    <Input type="number" placeholder="Ex: 5000" value={form.baseline_value} onChange={e => setForm(f => ({ ...f, baseline_value: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium mb-2 block">Modo de Progresso</Label>
+                    <RadioGroup value={form.progress_mode} onValueChange={v => setForm(f => ({ ...f, progress_mode: v as GoalProgressMode }))}>
+                      <div className="flex items-start gap-2">
+                        <RadioGroupItem value="evolution" id="manual-evolution" className="mt-0.5" />
+                        <label htmlFor="manual-evolution" className="text-sm cursor-pointer">
+                          <span className="font-medium">Evolutivo</span>
+                          <p className="text-[10px] text-muted-foreground">Progresso = valor atual / valor alvo</p>
+                        </label>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <RadioGroupItem value="remaining" id="manual-remaining" className="mt-0.5" />
+                        <label htmlFor="manual-remaining" className="text-sm cursor-pointer">
+                          <span className="font-medium">Valor Restante</span>
+                          <p className="text-[10px] text-muted-foreground">Mostra o crescimento desde o valor inicial até o alvo</p>
+                        </label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Prazo (opcional)</Label>
+                    <Input type="date" value={form.target_date} onChange={e => setForm(f => ({ ...f, target_date: e.target.value }))} />
+                  </div>
                   <Button className="w-full" onClick={handleAddManual}>Criar Meta</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Goal Dialog */}
+            <Dialog open={!!editingGoal} onOpenChange={open => { if (!open) setEditingGoal(null); }}>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
+                <DialogHeader><DialogTitle>Editar Meta</DialogTitle></DialogHeader>
+                <div className="space-y-4">
+                  <Input placeholder="Título" value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} />
+                  <Textarea placeholder="Descrição (opcional)" value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs">Valor alvo</Label>
+                      <Input type="number" value={editForm.target_value} onChange={e => setEditForm(f => ({ ...f, target_value: e.target.value }))} />
+                    </div>
+                    {!editingGoal?.data_source && (
+                      <div>
+                        <Label className="text-xs">Valor atual</Label>
+                        <Input type="number" value={editForm.current_value} onChange={e => setEditForm(f => ({ ...f, current_value: e.target.value }))} />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium mb-2 block">Modo de Progresso</Label>
+                    <RadioGroup value={editForm.progress_mode} onValueChange={v => setEditForm(f => ({ ...f, progress_mode: v as GoalProgressMode }))}>
+                      <div className="flex items-start gap-2">
+                        <RadioGroupItem value="evolution" id="edit-evolution" className="mt-0.5" />
+                        <label htmlFor="edit-evolution" className="text-sm cursor-pointer">
+                          <span className="font-medium">Evolutivo</span>
+                        </label>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <RadioGroupItem value="remaining" id="edit-remaining" className="mt-0.5" />
+                        <label htmlFor="edit-remaining" className="text-sm cursor-pointer">
+                          <span className="font-medium">Valor Restante</span>
+                        </label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Prazo (opcional)</Label>
+                    <Input type="date" value={editForm.target_date} onChange={e => setEditForm(f => ({ ...f, target_date: e.target.value }))} />
+                  </div>
+                  <Button className="w-full" onClick={handleSaveEdit}>Salvar Alterações</Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -208,7 +330,7 @@ export default function GoalsPage() {
         {activeGoals.length > 0 && (
           <div className="grid gap-4 md:grid-cols-2">
             {activeGoals.map(g => (
-              <GoalCard key={g.id} goal={g} onToggleStatus={toggleStatus} onDelete={deleteGoal} onUpdateProgress={updateProgress} />
+              <GoalCard key={g.id} goal={g} onToggleStatus={toggleStatus} onDelete={deleteGoal} onUpdateProgress={updateProgress} onEdit={startEditing} />
             ))}
           </div>
         )}
@@ -218,7 +340,7 @@ export default function GoalsPage() {
             <h2 className="text-sm font-semibold text-muted-foreground mt-4">Pausadas</h2>
             <div className="grid gap-4 md:grid-cols-2">
               {pausedGoals.map(g => (
-                <GoalCard key={g.id} goal={g} onToggleStatus={toggleStatus} onDelete={deleteGoal} onUpdateProgress={updateProgress} />
+                <GoalCard key={g.id} goal={g} onToggleStatus={toggleStatus} onDelete={deleteGoal} onUpdateProgress={updateProgress} onEdit={startEditing} />
               ))}
             </div>
           </>
@@ -229,7 +351,7 @@ export default function GoalsPage() {
             <h2 className="text-sm font-semibold text-muted-foreground mt-4">Concluídas</h2>
             <div className="grid gap-4 md:grid-cols-2">
               {completedGoals.map(g => (
-                <GoalCard key={g.id} goal={g} onToggleStatus={toggleStatus} onDelete={deleteGoal} onUpdateProgress={updateProgress} />
+                <GoalCard key={g.id} goal={g} onToggleStatus={toggleStatus} onDelete={deleteGoal} onUpdateProgress={updateProgress} onEdit={startEditing} />
               ))}
             </div>
           </>

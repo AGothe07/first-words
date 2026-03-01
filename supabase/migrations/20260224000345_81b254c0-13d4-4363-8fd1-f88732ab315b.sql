@@ -1,0 +1,1 @@
+SELECT rebuild_user_snapshot('47f47db2-330a-469e-ac54-4fe386ad7467'::uuid);

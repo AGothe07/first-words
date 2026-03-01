@@ -1,7 +1,8 @@
 import { useFinance } from "@/contexts/FinanceContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, LabelList } from "recharts";
+import { TransactionType } from "@/types/finance";
 
 const COLORS = [
   "hsl(168,80%,36%)", "hsl(199,89%,48%)", "hsl(262,52%,47%)", "hsl(38,92%,50%)",
@@ -10,15 +11,15 @@ const COLORS = [
 ];
 
 export function SubcategoryChart() {
-  const { crossFilteredTransactions, filteredTransactions, chartSelection, toggleChartSelection, subcategories, categories } = useFinance();
+  const { crossFilteredTransactions, filteredTransactions, chartSelection, toggleChartSelection, subcategories } = useFinance();
+  const [viewType, setViewType] = useState<TransactionType>("expense");
 
   const sourceTransactions = chartSelection.type === "subcategory" ? filteredTransactions : crossFilteredTransactions;
 
-  // Build stable color map: subcategory inherits parent category color index
   const subcategoryColorMap = useMemo(() => {
     const catColorMap: Record<string, number> = {};
     const catOrder: string[] = [];
-    filteredTransactions.filter(t => t.type === "expense").forEach(t => {
+    filteredTransactions.filter(t => t.type === viewType).forEach(t => {
       if (!catColorMap.hasOwnProperty(t.category_id)) {
         catColorMap[t.category_id] = catOrder.length;
         catOrder.push(t.category_id);
@@ -33,22 +34,21 @@ export function SubcategoryChart() {
       }
     });
     return map;
-  }, [filteredTransactions, subcategories]);
+  }, [filteredTransactions, subcategories, viewType]);
 
-  // Filter by selected categories if category cross-filter is active
   const activeCategoryIds = chartSelection.type === "category" && chartSelection.ids.length > 0
     ? chartSelection.ids
     : null;
 
   const data = useMemo(() => {
-    let expenses = sourceTransactions.filter(t => t.type === "expense" && t.subcategory_id);
+    let items = sourceTransactions.filter(t => t.type === viewType && t.subcategory_id);
 
     if (activeCategoryIds) {
-      expenses = expenses.filter(t => activeCategoryIds.includes(t.category_id));
+      items = items.filter(t => activeCategoryIds.includes(t.category_id));
     }
 
     const groups: Record<string, { name: string; value: number; count: number; id: string; categoryName: string }> = {};
-    expenses.forEach(t => {
+    items.forEach(t => {
       const subId = t.subcategory_id!;
       if (!groups[subId]) {
         groups[subId] = {
@@ -64,7 +64,7 @@ export function SubcategoryChart() {
     });
 
     return Object.values(groups).sort((a, b) => b.value - a.value);
-  }, [sourceTransactions, activeCategoryIds]);
+  }, [sourceTransactions, activeCategoryIds, viewType]);
 
   const total = data.reduce((s, d) => s + d.value, 0);
   const fmt = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -90,10 +90,28 @@ export function SubcategoryChart() {
     );
   };
 
+  const titleLabel = viewType === "expense" ? "Gastos" : "Receitas";
+
   return (
     <Card className="border-border shadow-sm">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold">Gastos por Subcategoria</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-semibold">{titleLabel} por Subcategoria</CardTitle>
+          <div className="flex rounded-md border border-border overflow-hidden text-xs">
+            <button
+              onClick={() => setViewType("expense")}
+              className={`px-2 py-1 transition-colors ${viewType === "expense" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
+            >
+              Gastos
+            </button>
+            <button
+              onClick={() => setViewType("income")}
+              className={`px-2 py-1 transition-colors ${viewType === "income" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
+            >
+              Receitas
+            </button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (

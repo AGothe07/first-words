@@ -73,7 +73,7 @@ export function AssetsProvider({ children }: { children: React.ReactNode }) {
 
   const updateAsset = useCallback(async (a: Asset) => {
     const { error } = await supabase.from("assets").update({
-      category: a.category, date: a.date, value: a.value,
+      category: a.category, date: a.date, value: a.value, updated_at: new Date().toISOString(),
     }).eq("id", a.id);
     if (error) { toast.error("Erro: " + error.message); return; }
     toast.success("Patrimônio atualizado!");

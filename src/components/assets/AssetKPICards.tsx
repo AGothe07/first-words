@@ -12,9 +12,27 @@ export function AssetKPICards() {
       return { currentTotal: 0, growth: 0, growthPct: 0, topCategory: "—", lastMonthVar: 0, avgMonthlyGrowthPct: 0, avgMonthlyGrowthBRL: 0 };
     }
 
-    // Group by date, get the most recent snapshot
-    const byDate = new Map<string, number>();
+    // For each month+category, keep only the latest entry (by date)
+    const latestByCatMonth = new Map<string, { value: number; date: string }>();
     filteredAssets.forEach(a => {
+      const month = a.date.slice(0, 7);
+      const key = `${month}|${a.category}`;
+      const existing = latestByCatMonth.get(key);
+      if (!existing || a.date > existing.date) {
+        latestByCatMonth.set(key, { value: a.value, date: a.date });
+      }
+    });
+
+    // Build deduplicated asset list
+    const deduped = Array.from(latestByCatMonth.entries()).map(([key, { value, date }]) => ({
+      category: key.split("|")[1],
+      date,
+      value,
+    }));
+
+    // Group by date, sum categories
+    const byDate = new Map<string, number>();
+    deduped.forEach(a => {
       byDate.set(a.date, (byDate.get(a.date) || 0) + a.value);
     });
     const sortedDates = Array.from(byDate.keys()).sort();
@@ -25,8 +43,9 @@ export function AssetKPICards() {
     const growth = currentTotal - earliestTotal;
     const growthPct = earliestTotal > 0 ? (growth / earliestTotal) * 100 : 0;
 
-    // Top category at latest date
-    const latestAssets = filteredAssets.filter(a => a.date === latestDate);
+    // Top category at latest month
+    const latestMonth = latestDate.slice(0, 7);
+    const latestAssets = deduped.filter(a => a.date.startsWith(latestMonth));
     const byCat = new Map<string, number>();
     latestAssets.forEach(a => {
       byCat.set(a.category, (byCat.get(a.category) || 0) + a.value);
