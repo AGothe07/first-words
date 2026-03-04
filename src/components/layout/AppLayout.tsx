@@ -1,8 +1,12 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { PanelLeft } from "lucide-react";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { useApplyPreferences } from "@/hooks/useApplyPreferences";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
+  const { preferences } = useUserPreferences();
+  useApplyPreferences(preferences);
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">

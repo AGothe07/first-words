@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -21,6 +23,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -30,6 +39,9 @@ import {
   RefreshCw,
   ShieldOff,
   PhoneOff,
+  UserPlus,
+  CalendarPlus,
+  CalendarMinus,
 } from "lucide-react";
 
 interface AdminUser {
@@ -44,6 +56,10 @@ interface AdminUser {
   phone: string | null;
   last_activity: string | null;
   roles: string[];
+  subscription_status: string | null;
+  manual_access_expires_at: string | null;
+  access_expires_at: string | null;
+  trial_ends_at: string | null;
 }
 
 export function UsersTab() {
@@ -56,7 +72,19 @@ export function UsersTab() {
     userId: string;
     label: string;
   }>({ open: false, action: "", userId: "", label: "" });
-  
+
+  // Create user dialog
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newName, setNewName] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  // Grant access dialog
+  const [grantOpen, setGrantOpen] = useState(false);
+  const [grantUserId, setGrantUserId] = useState("");
+  const [grantDays, setGrantDays] = useState("30");
+  const [granting, setGranting] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -72,10 +100,10 @@ export function UsersTab() {
     fetchUsers();
   }, [fetchUsers]);
 
-  const executeAction = async (action: string, userId: string) => {
+  const executeAction = async (action: string, userId: string, extra?: Record<string, unknown>) => {
     setActionLoading(userId);
     const { data, error } = await supabase.functions.invoke("admin-users", {
-      body: { action, userId },
+      body: { action, userId, ...extra },
     });
     if (error || data?.error) {
       toast.error(data?.error || "Erro ao executar ação");
@@ -91,6 +119,48 @@ export function UsersTab() {
     setDialog({ open: true, action, userId, label });
   };
 
+  const handleCreateUser = async () => {
+    if (!newEmail || !newPassword) {
+      toast.error("Preencha email e senha");
+      return;
+    }
+    setCreating(true);
+    const { data, error } = await supabase.functions.invoke("admin-users", {
+      body: { action: "create-user", email: newEmail, password: newPassword, displayName: newName },
+    });
+    if (error || data?.error) {
+      toast.error(data?.error || "Erro ao criar usuário");
+    } else {
+      toast.success("Usuário criado com sucesso");
+      setCreateOpen(false);
+      setNewEmail("");
+      setNewPassword("");
+      setNewName("");
+      fetchUsers();
+    }
+    setCreating(false);
+  };
+
+  const handleGrantAccess = async () => {
+    const days = parseInt(grantDays);
+    if (!days || days < 1) {
+      toast.error("Informe uma quantidade válida de dias");
+      return;
+    }
+    setGranting(true);
+    const { data, error } = await supabase.functions.invoke("admin-users", {
+      body: { action: "grant-access", userId: grantUserId, days },
+    });
+    if (error || data?.error) {
+      toast.error(data?.error || "Erro ao conceder acesso");
+    } else {
+      toast.success(`${days} dias de acesso concedidos`);
+      setGrantOpen(false);
+      fetchUsers();
+    }
+    setGranting(false);
+  };
+
   const fmt = (d: string | null) =>
     d ? new Date(d).toLocaleDateString("pt-BR") : "—";
   const fmtDt = (d: string | null) =>
@@ -103,6 +173,22 @@ export function UsersTab() {
 
   const isBanned = (u: AdminUser) =>
     u.banned_until && new Date(u.banned_until) > new Date();
+
+  const getAccessInfo = (u: AdminUser) => {
+    if (u.roles.includes("admin")) return { label: "Admin", variant: "default" as const };
+    const manual = u.manual_access_expires_at;
+    const access = u.access_expires_at;
+    const trial = u.trial_ends_at;
+    const expiresAt = manual && new Date(manual) > new Date() ? manual
+      : access && new Date(access) > new Date() ? access
+      : trial && new Date(trial) > new Date() ? trial
+      : null;
+    if (expiresAt) {
+      const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      return { label: `${days}d restantes`, variant: days <= 3 ? "destructive" as const : "default" as const };
+    }
+    return { label: "Sem acesso", variant: "secondary" as const };
+  };
 
   if (loading)
     return (
@@ -118,9 +204,14 @@ export function UsersTab() {
           <CardTitle className="text-lg">
             Usuários Cadastrados ({users.length})
           </CardTitle>
-          <Button variant="outline" size="sm" onClick={fetchUsers}>
-            <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="default" size="sm" onClick={() => setCreateOpen(true)}>
+              <UserPlus className="h-4 w-4 mr-1" /> Criar Usuário
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchUsers}>
+              <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
@@ -129,142 +220,155 @@ export function UsersTab() {
                 <TableHead>Email</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Criado em</TableHead>
-                <TableHead>Email Verificado</TableHead>
+                <TableHead>Acesso</TableHead>
                 <TableHead>IA</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Última Atividade</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell className="text-xs font-mono">{u.email}</TableCell>
-                  <TableCell className="text-sm">
-                    {u.display_name || "—"}
-                  </TableCell>
-                  <TableCell className="text-xs">{fmt(u.created_at)}</TableCell>
-                  <TableCell>
-                    {u.email_confirmed_at ? (
-                      <Badge variant="default" className="text-[10px]">
-                        Sim
+              {users.map((u) => {
+                const accessInfo = getAccessInfo(u);
+                return (
+                  <TableRow key={u.id}>
+                    <TableCell className="text-xs font-mono">{u.email}</TableCell>
+                    <TableCell className="text-sm">
+                      {u.display_name || "—"}
+                    </TableCell>
+                    <TableCell className="text-xs">{fmt(u.created_at)}</TableCell>
+                    <TableCell>
+                      <Badge variant={accessInfo.variant} className="text-[10px]">
+                        {accessInfo.label}
                       </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="text-[10px]">
-                        Não
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={u.ai_enabled ? "default" : "secondary"}
+                        className="text-[10px]"
+                      >
+                        {u.ai_enabled ? "Ativa" : "Inativa"}
                       </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={u.ai_enabled ? "default" : "secondary"}
-                      className="text-[10px]"
-                    >
-                      {u.ai_enabled ? "Ativa" : "Inativa"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-xs font-mono">
-                      {u.phone ? `+${u.phone}` : "—"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-xs">
-                    {fmtDt(u.last_activity)}
-                  </TableCell>
-                  <TableCell>
-                    {isBanned(u) ? (
-                      <Badge variant="destructive" className="text-[10px]">
-                        Bloqueado
-                      </Badge>
-                    ) : (
-                      <Badge variant="default" className="text-[10px]">
-                        Ativo
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1 flex-wrap">
+                    </TableCell>
+                    <TableCell>
                       {isBanned(u) ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-[10px]"
-                          disabled={actionLoading === u.id}
-                          onClick={() =>
-                            confirmAction("activate", u.id, "Reativar conta")
-                          }
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" /> Ativar
-                        </Button>
+                        <Badge variant="destructive" className="text-[10px]">
+                          Bloqueado
+                        </Badge>
                       ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-[10px]"
-                          disabled={
-                            actionLoading === u.id ||
-                            u.roles.includes("admin")
-                          }
-                          onClick={() =>
-                            confirmAction(
-                              "deactivate",
-                              u.id,
-                              "Desativar conta"
-                            )
-                          }
-                        >
-                          <Ban className="h-3 w-3 mr-1" /> Desativar
-                        </Button>
+                        <Badge variant="default" className="text-[10px]">
+                          Ativo
+                        </Badge>
                       )}
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-7 text-[10px]"
-                        disabled={
-                          actionLoading === u.id || u.roles.includes("admin")
-                        }
-                        onClick={() =>
-                          confirmAction("delete", u.id, "Excluir permanentemente")
-                        }
-                      >
-                        <Trash2 className="h-3 w-3 mr-1" /> Excluir
-                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 flex-wrap">
+                        {/* Grant / Revoke access */}
+                        {!u.roles.includes("admin") && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[10px]"
+                              disabled={actionLoading === u.id}
+                              onClick={() => {
+                                setGrantUserId(u.id);
+                                setGrantDays("30");
+                                setGrantOpen(true);
+                              }}
+                            >
+                              <CalendarPlus className="h-3 w-3 mr-1" /> Dar Dias
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[10px]"
+                              disabled={actionLoading === u.id}
+                              onClick={() =>
+                                confirmAction("revoke-access", u.id, "Revogar acesso manual")
+                              }
+                            >
+                              <CalendarMinus className="h-3 w-3 mr-1" /> Revogar
+                            </Button>
+                          </>
+                        )}
 
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-[10px]"
-                        disabled={actionLoading === u.id}
-                        onClick={() =>
-                          confirmAction("block-api", u.id, "Bloquear API")
-                        }
-                      >
-                        <ShieldOff className="h-3 w-3 mr-1" /> Bloquear API
-                      </Button>
-                      {u.phone && (
+                        {isBanned(u) ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-[10px]"
+                            disabled={actionLoading === u.id}
+                            onClick={() =>
+                              confirmAction("activate", u.id, "Reativar conta")
+                            }
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" /> Ativar
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-[10px]"
+                            disabled={
+                              actionLoading === u.id ||
+                              u.roles.includes("admin")
+                            }
+                            onClick={() =>
+                              confirmAction("deactivate", u.id, "Desativar conta")
+                            }
+                          >
+                            <Ban className="h-3 w-3 mr-1" /> Desativar
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="destructive"
                           className="h-7 text-[10px]"
-                          disabled={actionLoading === u.id}
+                          disabled={
+                            actionLoading === u.id || u.roles.includes("admin")
+                          }
                           onClick={() =>
-                            confirmAction("remove-phone", u.id, "Remover telefone")
+                            confirmAction("delete", u.id, "Excluir permanentemente")
                           }
                         >
-                          <PhoneOff className="h-3 w-3 mr-1" /> Remover Tel.
+                          <Trash2 className="h-3 w-3 mr-1" /> Excluir
                         </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[10px]"
+                          disabled={actionLoading === u.id}
+                          onClick={() =>
+                            confirmAction("block-api", u.id, "Bloquear API")
+                          }
+                        >
+                          <ShieldOff className="h-3 w-3 mr-1" /> Bloquear API
+                        </Button>
+                        {u.phone && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-7 text-[10px]"
+                            disabled={actionLoading === u.id}
+                            onClick={() =>
+                              confirmAction("remove-phone", u.id, "Remover telefone")
+                            }
+                          >
+                            <PhoneOff className="h-3 w-3 mr-1" /> Remover Tel.
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
+      {/* Confirm action dialog */}
       <AlertDialog
         open={dialog.open}
         onOpenChange={(o) =>
@@ -294,8 +398,84 @@ export function UsersTab() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Create user dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Criar Novo Usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nome</Label>
+              <Input
+                placeholder="Nome do usuário"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input
+                type="email"
+                placeholder="email@exemplo.com"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Senha</Label>
+              <Input
+                type="password"
+                placeholder="Senha inicial"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateUser} disabled={creating}>
+              {creating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <UserPlus className="h-4 w-4 mr-1" />}
+              Criar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-
+      {/* Grant access dialog */}
+      <Dialog open={grantOpen} onOpenChange={setGrantOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Conceder Dias de Acesso</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Se o usuário já tem acesso manual ativo, os dias serão somados ao prazo existente.
+            </p>
+            <div>
+              <Label>Quantidade de dias</Label>
+              <Input
+                type="number"
+                min={1}
+                max={365}
+                value={grantDays}
+                onChange={(e) => setGrantDays(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGrantOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleGrantAccess} disabled={granting}>
+              {granting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CalendarPlus className="h-4 w-4 mr-1" />}
+              Conceder
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

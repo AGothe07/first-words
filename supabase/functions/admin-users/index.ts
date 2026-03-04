@@ -101,6 +101,9 @@ Deno.serve(async (req) => {
         const { data: roles } = await svc
           .from("user_roles")
           .select("user_id, role");
+        const { data: subs } = await svc
+          .from("subscriptions")
+          .select("user_id, status, manual_access_expires_at, access_expires_at, trial_ends_at");
 
         const enriched = users.map((u: any) => {
           const profile = profiles?.find((p: any) => p.id === u.id);
@@ -109,6 +112,7 @@ Deno.serve(async (req) => {
             roles
               ?.filter((r: any) => r.user_id === u.id)
               .map((r: any) => r.role) || [];
+          const sub = subs?.find((s: any) => s.user_id === u.id);
           return {
             id: u.id,
             email: u.email,
@@ -122,9 +126,107 @@ Deno.serve(async (req) => {
             last_activity: profile?.last_activity,
             has_active_token: !!activeToken,
             roles: userRoles,
+            subscription_status: sub?.status || null,
+            manual_access_expires_at: sub?.manual_access_expires_at || null,
+            access_expires_at: sub?.access_expires_at || null,
+            trial_ends_at: sub?.trial_ends_at || null,
           };
         });
         return jsonRes({ users: enriched });
+      }
+
+      case "create-user": {
+        const email = body.email as string;
+        const password = body.password as string;
+        const displayName = body.displayName as string | undefined;
+        if (!email || !password) throw new Error("email and password required");
+
+        const { data: newUser, error } = await svc.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: { display_name: displayName || email.split("@")[0] },
+        });
+        if (error) throw error;
+
+        await svc.from("security_events").insert({
+          event_type: "user_created_by_admin",
+          user_id: newUser.user?.id,
+          metadata: { by: callerId, email },
+        });
+        return jsonRes({ success: true, userId: newUser.user?.id });
+      }
+
+      case "grant-access": {
+        if (!targetUserId) throw new Error("userId required");
+        const days = body.days as number;
+        if (!days || days < 1 || days > 365) throw new Error("days must be 1-365");
+
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + days);
+
+        // Check if subscription exists
+        const { data: existingSub } = await svc
+          .from("subscriptions")
+          .select("id, manual_access_expires_at")
+          .eq("user_id", targetUserId)
+          .limit(1)
+          .maybeSingle();
+
+        if (existingSub) {
+          // If there's already manual access, extend from that date
+          let baseDate = new Date();
+          if (existingSub.manual_access_expires_at && new Date(existingSub.manual_access_expires_at) > baseDate) {
+            baseDate = new Date(existingSub.manual_access_expires_at);
+          }
+          baseDate.setDate(baseDate.getDate() + days);
+
+          await svc
+            .from("subscriptions")
+            .update({ manual_access_expires_at: baseDate.toISOString() })
+            .eq("id", existingSub.id);
+        } else {
+          // Create a subscription record with manual access
+          await svc.from("subscriptions").insert({
+            user_id: targetUserId,
+            status: "active",
+            plan_type: "monthly",
+            value: 0,
+            manual_access_expires_at: expiresAt.toISOString(),
+          });
+        }
+
+        await svc.from("security_events").insert({
+          event_type: "manual_access_granted",
+          user_id: targetUserId,
+          metadata: { by: callerId, days },
+        });
+        return jsonRes({ success: true });
+      }
+
+      case "revoke-access": {
+        if (!targetUserId) throw new Error("userId required");
+
+        const { data: sub } = await svc
+          .from("subscriptions")
+          .select("id")
+          .eq("user_id", targetUserId)
+          .limit(1)
+          .maybeSingle();
+
+        if (sub) {
+          await svc
+            .from("subscriptions")
+            .update({ manual_access_expires_at: new Date().toISOString() })
+            .eq("id", sub.id);
+        }
+
+        await svc.from("security_events").insert({
+          event_type: "manual_access_revoked",
+          user_id: targetUserId,
+          metadata: { by: callerId },
+        });
+        return jsonRes({ success: true });
       }
 
       case "deactivate": {
@@ -248,12 +350,10 @@ Deno.serve(async (req) => {
 
       case "remove-phone": {
         if (!targetUserId) throw new Error("userId required");
-        // Remove phone and disable AI
         await svc
           .from("profiles")
           .update({ phone: null, ai_enabled: false })
           .eq("id", targetUserId);
-        // Revoke tokens
         await svc
           .from("ai_tokens")
           .update({ is_active: false, revoked_at: new Date().toISOString(), revoked_by: callerId })

@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, ArrowLeftRight, Tags, UserCog, LogOut, FileUp,
   ShieldAlert, Bot, Landmark, Sliders, Lightbulb, CalendarDays,
-  Target, PartyPopper, ChevronRight, Wallet, Settings
+  Target, PartyPopper, ChevronRight, Wallet, Settings, CreditCard
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -65,6 +65,7 @@ const modules: ModuleConfig[] = [
     icon: Settings,
     mainItems: [
       { title: "Configurações", url: "/settings", icon: Settings },
+      { title: "Minha Assinatura", url: "/subscription/manage", icon: CreditCard },
     ],
   },
 ];

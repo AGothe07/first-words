@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPreferences } from "@/hooks/useUserPreferences";
+import { useApplyPreferences } from "@/hooks/useApplyPreferences";
 import { Palette, Sun, Moon } from "lucide-react";
 
 interface Props {
@@ -10,6 +12,7 @@ interface Props {
 }
 
 const colors = [
+  { value: "#0D9488", label: "Teal", class: "bg-[#0D9488]" },
   { value: "#8B5CF6", label: "Roxo", class: "bg-[#8B5CF6]" },
   { value: "#3B82F6", label: "Azul", class: "bg-[#3B82F6]" },
   { value: "#10B981", label: "Verde", class: "bg-[#10B981]" },
@@ -20,6 +23,9 @@ const colors = [
 ];
 
 export function AppearanceSection({ preferences, onUpdate }: Props) {
+  // Apply preferences live as user changes them
+  useApplyPreferences(preferences);
+
   if (!preferences) return null;
 
   return (

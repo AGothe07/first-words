@@ -41,7 +41,7 @@ const defaultPrefs = (userId: string): UserPreferences => ({
   default_event_duration: 60,
   default_event_notify: true,
   theme: "light",
-  primary_color: "#8B5CF6",
+  primary_color: "#0D9488",
   font_size: "medium",
   layout_density: "comfortable",
   max_session_hours: 24,

@@ -149,6 +149,36 @@ export type Database = {
         }
         Relationships: []
       }
+      asaas_webhook_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_name: string
+          id: string
+          processed: boolean | null
+          processed_at: string | null
+          raw_payload: Json | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_name: string
+          id: string
+          processed?: boolean | null
+          processed_at?: string | null
+          raw_payload?: Json | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_name?: string
+          id?: string
+          processed?: boolean | null
+          processed_at?: string | null
+          raw_payload?: Json | null
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           category: string
@@ -749,6 +779,158 @@ export type Database = {
           },
         ]
       }
+      subscription_payments: {
+        Row: {
+          amount: number
+          asaas_payment_id: string | null
+          asaas_subscription_id: string | null
+          billing_type: string | null
+          confirmed_at: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          net_value: number | null
+          raw_payload: Json | null
+          received_at: string | null
+          status: Database["public"]["Enums"]["payment_status"]
+          subscription_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number
+          asaas_payment_id?: string | null
+          asaas_subscription_id?: string | null
+          billing_type?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          net_value?: number | null
+          raw_payload?: Json | null
+          received_at?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          subscription_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          asaas_payment_id?: string | null
+          asaas_subscription_id?: string | null
+          billing_type?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          net_value?: number | null
+          raw_payload?: Json | null
+          received_at?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          subscription_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          access_expires_at: string | null
+          asaas_customer_id: string | null
+          asaas_subscription_id: string | null
+          cancelled_at: string | null
+          created_at: string
+          customer_cpf_cnpj: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          last_payment_confirmed_at: string | null
+          manual_access_expires_at: string | null
+          next_due_date: string | null
+          plan_type: Database["public"]["Enums"]["plan_type"]
+          started_at: string | null
+          status: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at: string | null
+          trial_started_at: string | null
+          trial_used: boolean | null
+          updated_at: string
+          user_id: string | null
+          value: number
+        }
+        Insert: {
+          access_expires_at?: string | null
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          customer_cpf_cnpj?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          last_payment_confirmed_at?: string | null
+          manual_access_expires_at?: string | null
+          next_due_date?: string | null
+          plan_type?: Database["public"]["Enums"]["plan_type"]
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
+          trial_used?: boolean | null
+          updated_at?: string
+          user_id?: string | null
+          value?: number
+        }
+        Update: {
+          access_expires_at?: string | null
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          customer_cpf_cnpj?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          last_payment_confirmed_at?: string | null
+          manual_access_expires_at?: string | null
+          next_due_date?: string | null
+          plan_type?: Database["public"]["Enums"]["plan_type"]
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
+          trial_used?: boolean | null
+          updated_at?: string
+          user_id?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tags: {
         Row: {
           color: string | null
@@ -1162,6 +1344,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_cpf_email_uniqueness: {
+        Args: { _cpf: string; _email: string; _user_id?: string }
+        Returns: Json
+      }
+      email_has_used_trial: { Args: { _email: string }; Returns: boolean }
       has_role:
         | {
             Args: {
@@ -1177,6 +1364,7 @@ export type Database = {
             }
             Returns: boolean
           }
+      has_valid_access: { Args: { _user_id: string }; Returns: boolean }
       normalize_brazilian_phone: { Args: { input: string }; Returns: string }
       rebuild_financial_snapshot: {
         Args: { p_user_id: string }
@@ -1194,6 +1382,22 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      payment_status:
+        | "pending"
+        | "confirmed"
+        | "received"
+        | "overdue"
+        | "refunded"
+        | "chargeback"
+      plan_type: "monthly" | "annual"
+      subscription_status:
+        | "active"
+        | "inactive"
+        | "pending"
+        | "cancelled"
+        | "overdue"
+        | "trial_active"
+        | "trial_expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1322,6 +1526,24 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      payment_status: [
+        "pending",
+        "confirmed",
+        "received",
+        "overdue",
+        "refunded",
+        "chargeback",
+      ],
+      plan_type: ["monthly", "annual"],
+      subscription_status: [
+        "active",
+        "inactive",
+        "pending",
+        "cancelled",
+        "overdue",
+        "trial_active",
+        "trial_expired",
+      ],
     },
   },
 } as const
