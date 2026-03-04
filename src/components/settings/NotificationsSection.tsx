@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { UserPreferences } from "@/hooks/useUserPreferences";
-import { Bell, Cake, CalendarDays, Smartphone, Save, Loader2, CheckCircle2, XCircle, Wifi, WifiOff } from "lucide-react";
+import { Bell, Cake, CalendarDays, Save, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import WhatsAppTab from "@/components/notifications/WhatsAppTab";
 
 type NotificationSetting = {
   id?: string;
@@ -35,18 +36,14 @@ export function NotificationsSection({ preferences, onUpdate }: Props) {
   const [event, setEvent] = useState<NotificationSetting | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [whatsappStatus, setWhatsappStatus] = useState<string>("disconnected");
 
   const fetchSettings = useCallback(async () => {
     if (!user) return;
-    const [settingsRes, waRes] = await Promise.all([
-      supabase.from("notification_settings").select("*").eq("user_id", user.id),
-      supabase.from("whatsapp_instances").select("status").eq("user_id", user.id).maybeSingle(),
-    ]);
+    const { data } = await supabase.from("notification_settings").select("*").eq("user_id", user.id);
 
-    const data = settingsRes.data || [];
-    const bday = data.find((s: any) => s.setting_type === "birthday");
-    const evt = data.find((s: any) => s.setting_type === "event");
+    const rows = data || [];
+    const bday = rows.find((s: any) => s.setting_type === "birthday");
+    const evt = rows.find((s: any) => s.setting_type === "event");
 
     setBirthday(bday ? bday as any : {
       user_id: user.id, setting_type: "birthday",
@@ -58,7 +55,6 @@ export function NotificationsSection({ preferences, onUpdate }: Props) {
       message_template: "📅 Lembrete: {evento} em {data}",
       send_on_day: true, send_days_before: 0, send_both: false, is_active: true,
     });
-    setWhatsappStatus(waRes.data?.status || "disconnected");
     setLoading(false);
   }, [user]);
 
@@ -192,27 +188,8 @@ export function NotificationsSection({ preferences, onUpdate }: Props) {
         </CardContent>
       </Card>
 
-      {/* WhatsApp status */}
-      <Card>
-        <CardContent className="flex items-center justify-between py-4">
-          <div className="flex items-center gap-3">
-            <Smartphone className="h-4 w-4 text-primary" />
-            <div>
-              <span className="text-sm font-medium">WhatsApp</span>
-              <div className="flex items-center gap-1 mt-0.5">
-                {whatsappStatus === "connected" ? (
-                  <><Wifi className="h-3 w-3 text-green-500" /><span className="text-xs text-green-600">Conectado</span></>
-                ) : (
-                  <><WifiOff className="h-3 w-3 text-muted-foreground" /><span className="text-xs text-muted-foreground">Desconectado</span></>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={fetchSettings}>Verificar Status</Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* WhatsApp - full management */}
+      <WhatsAppTab />
 
       {/* Message templates */}
       <div className="grid gap-4">
