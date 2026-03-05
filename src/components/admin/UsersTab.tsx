@@ -42,6 +42,7 @@ import {
   UserPlus,
   CalendarPlus,
   CalendarMinus,
+  Smartphone,
 } from "lucide-react";
 
 interface AdminUser {
@@ -60,6 +61,9 @@ interface AdminUser {
   manual_access_expires_at: string | null;
   access_expires_at: string | null;
   trial_ends_at: string | null;
+  has_whatsapp_instance: boolean;
+  whatsapp_instance_name: string | null;
+  whatsapp_status: string | null;
 }
 
 export function UsersTab() {
@@ -356,6 +360,19 @@ export function UsersTab() {
                             }
                           >
                             <PhoneOff className="h-3 w-3 mr-1" /> Remover Tel.
+                          </Button>
+                        )}
+                        {u.has_whatsapp_instance && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-7 text-[10px]"
+                            disabled={actionLoading === u.id}
+                            onClick={() =>
+                              confirmAction("delete-whatsapp-instance", u.id, `Apagar instância WhatsApp (${u.whatsapp_instance_name || "sem nome"})`)
+                            }
+                          >
+                            <Smartphone className="h-3 w-3 mr-1" /> Apagar WhatsApp
                           </Button>
                         )}
                       </div>

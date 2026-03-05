@@ -80,11 +80,15 @@ export default function WhatsAppTab() {
   }, []);
 
   // --- Status check via webhook ---
+  const webhookUrlsRef = useRef(webhookUrls);
+  useEffect(() => { webhookUrlsRef.current = webhookUrls; }, [webhookUrls]);
+
   const checkStatus = useCallback(async (token: string, silent = false) => {
     if (!silent) setCheckingStatus(true);
     try {
-      if (!webhookUrls.whatsapp_status) return;
-      const res = await fetch(webhookUrls.whatsapp_status, {
+      const statusUrl = webhookUrlsRef.current.whatsapp_status;
+      if (!statusUrl) { if (!silent) setCheckingStatus(false); return; }
+      const res = await fetch(statusUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),

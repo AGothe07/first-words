@@ -243,7 +243,7 @@ Deno.serve(async (req) => {
             const triggerTotalMinutes = triggerHour * 60 + triggerMinute;
             const isToday = triggerDateStr === todayStr;
             const hasPassed = triggerTotalMinutes <= nowTotalMinutes;
-            const withinCatchUp = (nowTotalMinutes - triggerTotalMinutes) <= 60;
+            const withinCatchUp = (nowTotalMinutes - triggerTotalMinutes) <= 10;
             if (!isToday || !hasPassed || !withinCatchUp) continue;
 
             const logKey = `${send.type}_${triggerHour}${String(triggerMinute).padStart(2, "0")}`;

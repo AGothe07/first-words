@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UsersTab } from "@/components/admin/UsersTab";
 import { WebhooksTab } from "@/components/admin/WebhooksTab";
 import { SecurityTab } from "@/components/admin/SecurityTab";
+import { AdminSettingsTab } from "@/components/admin/AdminSettingsTab";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate } from "react-router-dom";
 import { Loader2, ShieldAlert } from "lucide-react";
@@ -30,6 +31,7 @@ export default function AdminPage() {
           <TabsTrigger value="users">Usuários</TabsTrigger>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
           <TabsTrigger value="security">Segurança</TabsTrigger>
+          <TabsTrigger value="settings">Configurações</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
@@ -40,6 +42,9 @@ export default function AdminPage() {
         </TabsContent>
         <TabsContent value="security">
           <SecurityTab />
+        </TabsContent>
+        <TabsContent value="settings">
+          <AdminSettingsTab />
         </TabsContent>
       </Tabs>
     </AppLayout>

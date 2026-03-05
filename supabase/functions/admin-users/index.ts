@@ -1,18 +1,22 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ALLOWED_ORIGINS = [
-  "https://financial.lendscope.com.br",
-  "https://n8n-n8n.czby9f.easypanel.host",
-  "https://id-preview--25132eda-0e5b-447c-9d18-6de3b7514cfb.lovable.app",
-  "https://design-zen-space-45.lovable.app",
-  "https://id-preview--eb4ac121-e216-4641-a442-c6aff99bb8f1.lovable.app",
-  "https://simple-hello-spark-59.lovable.app",
-  "https://eb4ac121-e216-4641-a442-c6aff99bb8f1.lovableproject.com",
-];
+function isAllowedOrigin(origin: string): boolean {
+  if (!origin) return false;
+  const allowed = [
+    "financial.lendscope.com.br",
+    "n8n-n8n.czby9f.easypanel.host",
+    "mono-form-awe.lovable.app",
+  ];
+  if (allowed.some((d) => origin === `https://${d}`)) return true;
+  // Allow all lovable preview/project domains
+  if (/^https:\/\/.*\.lovable\.app$/.test(origin)) return true;
+  if (/^https:\/\/.*\.lovableproject\.com$/.test(origin)) return true;
+  return false;
+}
 
 function getCorsHeaders(req?: Request) {
   const origin = req?.headers.get("Origin") || "";
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  const allowedOrigin = isAllowedOrigin(origin) ? origin : "https://financial.lendscope.com.br";
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Headers":
@@ -105,6 +109,10 @@ Deno.serve(async (req) => {
           .from("subscriptions")
           .select("user_id, status, manual_access_expires_at, access_expires_at, trial_ends_at");
 
+        const { data: waInstances } = await svc
+          .from("whatsapp_instances")
+          .select("user_id, instance_name, status");
+
         const enriched = users.map((u: any) => {
           const profile = profiles?.find((p: any) => p.id === u.id);
           const activeToken = tokens?.find((t: any) => t.user_id === u.id);
@@ -113,6 +121,7 @@ Deno.serve(async (req) => {
               ?.filter((r: any) => r.user_id === u.id)
               .map((r: any) => r.role) || [];
           const sub = subs?.find((s: any) => s.user_id === u.id);
+          const waInst = waInstances?.find((w: any) => w.user_id === u.id);
           return {
             id: u.id,
             email: u.email,
@@ -130,6 +139,9 @@ Deno.serve(async (req) => {
             manual_access_expires_at: sub?.manual_access_expires_at || null,
             access_expires_at: sub?.access_expires_at || null,
             trial_ends_at: sub?.trial_ends_at || null,
+            has_whatsapp_instance: !!waInst,
+            whatsapp_instance_name: waInst?.instance_name || null,
+            whatsapp_status: waInst?.status || null,
           };
         });
         return jsonRes({ users: enriched });
@@ -365,6 +377,79 @@ Deno.serve(async (req) => {
           metadata: { by: callerId },
         });
         return jsonRes({ success: true });
+      }
+
+      case "delete-whatsapp-instance": {
+        if (!targetUserId) throw new Error("userId required");
+
+        // Fetch instance details
+        const { data: waInstance } = await svc
+          .from("whatsapp_instances")
+          .select("id, token, instance_name")
+          .eq("user_id", targetUserId)
+          .limit(1)
+          .maybeSingle();
+
+        if (!waInstance) throw new Error("Nenhuma instância encontrada para este usuário");
+
+        // Fetch api_key_admin from admin_settings
+        const { data: apiKeySetting } = await svc
+          .from("admin_settings")
+          .select("setting_value")
+          .eq("setting_key", "api_key_admin")
+          .limit(1)
+          .maybeSingle();
+
+        // Fetch webhook URL for deletion
+        const { data: whDeleteHook } = await svc
+          .from("webhook_configs")
+          .select("url")
+          .eq("function_key", "whatsapp_delete")
+          .eq("is_active", true)
+          .limit(1)
+          .maybeSingle();
+
+        // Call external webhook to delete the instance
+        if (whDeleteHook?.url) {
+          try {
+            await fetch(whDeleteHook.url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                token: waInstance.token,
+                instance_name: waInstance.instance_name,
+                instance_id: waInstance.id,
+                user_id: targetUserId,
+                api_key_admin: apiKeySetting?.setting_value || "",
+              }),
+            });
+          } catch (e) {
+            console.error("Webhook delete call failed:", e);
+          }
+        }
+
+        // Delete from DB
+        await svc
+          .from("whatsapp_instances")
+          .delete()
+          .eq("user_id", targetUserId);
+
+        await svc.from("security_events").insert({
+          event_type: "whatsapp_instance_deleted_by_admin",
+          user_id: targetUserId,
+          metadata: { by: callerId, instance_name: waInstance.instance_name, token: waInstance.token },
+        });
+        return jsonRes({ success: true });
+      }
+
+      case "get-admin-settings": {
+        const { data: adminSettings } = await svc
+          .from("admin_settings")
+          .select("setting_key, setting_value")
+          .in("setting_key", ["api_key_admin", "instance_token_system"]);
+        const result: Record<string, string> = {};
+        adminSettings?.forEach((s: any) => { result[s.setting_key] = s.setting_value; });
+        return jsonRes({ settings: result });
       }
 
       default:
