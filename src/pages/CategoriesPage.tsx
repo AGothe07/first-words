@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useReadOnly } from "@/hooks/useReadOnly";
 import { useFinance } from "@/contexts/FinanceContext";
 import { TransactionType } from "@/types/finance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import { useThrottle } from "@/hooks/useDebounce";
 type CategoryType = TransactionType | "asset";
 
 export default function CategoriesPage() {
+  const { isReadOnly } = useReadOnly();
   const { categories, subcategories, addCategory, updateCategory, deleteCategory, addSubcategory, updateSubcategory, deleteSubcategory } = useFinance();
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<CategoryType>("expense");
@@ -68,6 +70,7 @@ export default function CategoriesPage() {
               <SelectItem value="asset">Patrimônio</SelectItem>
             </SelectContent>
           </Select>
+          {!isReadOnly && (
           <Dialog open={openAdd} onOpenChange={setOpenAdd}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1"><Plus className="h-4 w-4" /> Nova Categoria</Button>
@@ -94,6 +97,7 @@ export default function CategoriesPage() {
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </div>
 
@@ -122,6 +126,7 @@ export default function CategoriesPage() {
                     <Badge variant="outline" className="text-[10px]">{typeLabel(cat.type)}</Badge>
                     {subs.length > 0 && <Badge variant="secondary" className="text-[10px]">{subs.length} sub</Badge>}
                   </div>
+                  {!isReadOnly && (
                   <div className="flex items-center gap-2">
                     <Switch checked={cat.is_active} onCheckedChange={v => updateCategory(cat.id, cat.name, v)} />
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingCat(cat.id); setEditName(cat.name); }}>
@@ -131,6 +136,7 @@ export default function CategoriesPage() {
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
+                  )}
                 </div>
 
                 {isExpanded && (

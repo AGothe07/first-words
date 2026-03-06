@@ -8,8 +8,11 @@ import { AssetTimelineChart } from "@/components/assets/AssetTimelineChart";
 import { AssetDistributionChart } from "@/components/assets/AssetDistributionChart";
 import { AssetGrowthChart } from "@/components/assets/AssetGrowthChart";
 import { QuickAssetUpdate } from "@/components/assets/QuickAssetUpdate";
+import { useReadOnly } from "@/hooks/useReadOnly";
 
 export default function AssetsPage() {
+  const { isReadOnly } = useReadOnly();
+
   return (
     <AppLayout>
       <div className="flex items-center justify-between mb-4">
@@ -17,10 +20,12 @@ export default function AssetsPage() {
           <h1 className="text-xl font-bold tracking-tight">Patrimônio</h1>
           <p className="text-sm text-muted-foreground">Registre e acompanhe a evolução do seu patrimônio</p>
         </div>
-        <div className="flex gap-2">
-          <QuickAssetUpdate />
-          <AssetForm />
-        </div>
+        {!isReadOnly && (
+          <div className="flex gap-2">
+            <QuickAssetUpdate />
+            <AssetForm />
+          </div>
+        )}
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
@@ -43,7 +48,7 @@ export default function AssetsPage() {
 
         <TabsContent value="records" className="space-y-4">
           <AssetFilters />
-          <AssetTable />
+          <AssetTable readOnly={isReadOnly} />
         </TabsContent>
       </Tabs>
     </AppLayout>

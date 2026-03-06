@@ -17,6 +17,7 @@ import { useDimensions } from "@/contexts/DimensionsContext";
 import { DimensionKey } from "@/types/dimensions";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
+import { useReadOnly } from "@/hooks/useReadOnly";
 
 function ActiveSelectionBanner() {
   const { chartSelection, clearChartSelection, toggleChartSelection } = useFinance();
@@ -52,6 +53,7 @@ function ActiveSelectionBanner() {
 
 export default function Dashboard() {
   const { isDimensionActive } = useDimensions();
+  const { isReadOnly } = useReadOnly();
 
   const chartDimensions: DimensionKey[] = (["payment_method", "account", "project"] as DimensionKey[])
     .filter(k => isDimensionActive(k));
@@ -63,7 +65,7 @@ export default function Dashboard() {
           <h1 className="text-xl font-bold tracking-tight">Dashboard Financeiro</h1>
           <p className="text-sm text-muted-foreground">Visão geral completa das suas finanças</p>
         </div>
-        <TransactionForm />
+        {!isReadOnly && <TransactionForm />}
       </div>
 
       <GlobalFilters />

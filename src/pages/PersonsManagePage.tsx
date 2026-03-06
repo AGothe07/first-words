@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useReadOnly } from "@/hooks/useReadOnly";
 import { useFinance } from "@/contexts/FinanceContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { toast } from "sonner";
 import { useThrottle } from "@/hooks/useDebounce";
 
 export default function PersonsManagePage() {
+  const { isReadOnly } = useReadOnly();
   const { persons, addPerson, updatePerson, deletePerson } = useFinance();
   const [newName, setNewName] = useState("");
   const [openAdd, setOpenAdd] = useState(false);
@@ -32,6 +34,7 @@ export default function PersonsManagePage() {
           <h1 className="text-xl font-bold tracking-tight">Pessoas</h1>
           <p className="text-sm text-muted-foreground">Gerencie as pessoas vinculadas aos lançamentos</p>
         </div>
+        {!isReadOnly && (
         <Dialog open={openAdd} onOpenChange={setOpenAdd}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-1"><Plus className="h-4 w-4" /> Nova Pessoa</Button>
@@ -47,6 +50,7 @@ export default function PersonsManagePage() {
             </div>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -63,6 +67,7 @@ export default function PersonsManagePage() {
               ) : (
                 <span className={`text-sm font-medium ${!p.is_active ? "text-muted-foreground line-through" : ""}`}>{p.name}</span>
               )}
+              {!isReadOnly && (
               <div className="flex items-center gap-2">
                 <Switch checked={p.is_active} onCheckedChange={v => updatePerson(p.id, p.name, v)} />
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingId(p.id); setEditName(p.name); }}>
@@ -72,6 +77,7 @@ export default function PersonsManagePage() {
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
+              )}
             </CardContent>
           </Card>
         ))}

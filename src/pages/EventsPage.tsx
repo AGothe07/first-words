@@ -16,6 +16,7 @@ import { format, parseISO, differenceInDays, setYear, isBefore, startOfDay } fro
 import { ptBR } from "date-fns/locale";
 import { Plus, PartyPopper, Trash2, Cake, Heart, Star, CalendarHeart, Gift, Phone, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useReadOnly } from "@/hooks/useReadOnly";
 
 type ImportantEvent = {
   id: string;
@@ -81,6 +82,7 @@ function getDaysUntil(dateStr: string): number {
 
 export default function EventsPage() {
   const { user } = useAuth();
+  const { isReadOnly } = useReadOnly();
   const [events, setEvents] = useState<ImportantEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -183,6 +185,7 @@ export default function EventsPage() {
             {daysUntil === 0 ? "Hoje!" : daysUntil === 1 ? "Amanhã" : `${daysUntil} dias`}
           </p>
         </div>
+        {!isReadOnly && (
         <div className="flex items-center gap-1">
           <Switch checked={event.auto_notify} onCheckedChange={() => toggleNotify(event)} title="Notificação automática" />
           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEdit(event)}>
@@ -192,6 +195,7 @@ export default function EventsPage() {
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
+        )}
       </div>
     );
   };
@@ -245,6 +249,7 @@ export default function EventsPage() {
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><PartyPopper className="h-6 w-6 text-primary" /> Datas Importantes</h1>
             <p className="text-sm text-muted-foreground">Nunca esqueça um aniversário ou data especial</p>
           </div>
+          {!isReadOnly && (
           <Dialog open={dialogOpen} onOpenChange={v => { setDialogOpen(v); if (!v) setEditingEvent(null); }}>
             <DialogTrigger asChild><Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo Evento</Button></DialogTrigger>
             <DialogContent>
@@ -252,6 +257,7 @@ export default function EventsPage() {
               {renderForm()}
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         {upcoming.length > 0 && (

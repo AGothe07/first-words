@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 
 type SortKey = "date" | "amount" | "person_name" | "category_name";
 
-export function TransactionTable() {
+export function TransactionTable({ readOnly = false }: { readOnly?: boolean }) {
   const { filteredTransactions, deleteTransaction, bulkDeleteTransactions, categories, subcategories, persons } = useFinance();
   const { isDimensionActive } = useDimensions();
   const [search, setSearch] = useState("");
@@ -140,12 +140,13 @@ export function TransactionTable() {
           <Download className="h-4 w-4" /> Exportar CSV
         </Button>
 
-        <Dialog open={bulkOpen} onOpenChange={(open) => { setBulkOpen(open); if (!open) resetBulkFilters(); }}>
-          <DialogTrigger asChild>
-            <Button variant="destructive" size="sm" className="gap-1">
-              <Trash2 className="h-4 w-4" /> Exclusão em Massa
-            </Button>
-          </DialogTrigger>
+        {!readOnly && (
+          <Dialog open={bulkOpen} onOpenChange={(open) => { setBulkOpen(open); if (!open) resetBulkFilters(); }}>
+            <DialogTrigger asChild>
+              <Button variant="destructive" size="sm" className="gap-1">
+                <Trash2 className="h-4 w-4" /> Exclusão em Massa
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -287,6 +288,7 @@ export function TransactionTable() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="rounded-lg border overflow-auto">
@@ -336,14 +338,16 @@ export function TransactionTable() {
                   {isDimensionActive("project") && <TableCell className="text-xs text-muted-foreground">{t.project_name}</TableCell>}
                   <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">{t.notes}</TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditing(t)}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => throttledDelete(t.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    {!readOnly && (
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditing(t)}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => throttledDelete(t.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -352,7 +356,7 @@ export function TransactionTable() {
         </Table>
       </div>
 
-      {editing && <TransactionForm editTransaction={editing} onClose={() => setEditing(null)} />}
+      {!readOnly && editing && <TransactionForm editTransaction={editing} onClose={() => setEditing(null)} />}
 
       <p className="text-xs text-muted-foreground mt-2">{filtered.length} lançamento(s)</p>
     </div>

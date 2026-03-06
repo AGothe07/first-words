@@ -11,9 +11,11 @@ import { AgendaFormDialog } from "@/components/agenda/AgendaFormDialog";
 import { expandEvents } from "@/components/agenda/utils";
 import type { AgendaItem, CalendarEvent, CalendarView, FormState } from "@/components/agenda/types";
 import { emptyForm } from "@/components/agenda/types";
+import { useReadOnly } from "@/hooks/useReadOnly";
 
 export default function AgendaPage() {
   const { user } = useAuth();
+  const { isReadOnly } = useReadOnly();
   const [items, setItems] = useState<AgendaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<CalendarView>("week");
@@ -60,6 +62,7 @@ export default function AgendaPage() {
 
   // Open create dialog with pre-filled date/time
   const openCreate = (date?: Date) => {
+    if (isReadOnly) return;
     setEditingItem(null);
     const d = date || new Date();
     setForm({
@@ -74,6 +77,7 @@ export default function AgendaPage() {
   };
 
   const openEdit = (ev: CalendarEvent) => {
+    if (isReadOnly) return;
     const item = items.find(i => i.id === ev.originalId);
     if (!item) return;
     setEditingItem(item);
@@ -189,7 +193,7 @@ export default function AgendaPage() {
           view={view}
           onDateChange={setCurrentDate}
           onViewChange={setView}
-          onNewEvent={() => openCreate()}
+          onNewEvent={() => !isReadOnly && openCreate()}
         />
 
         {view === "month" && (

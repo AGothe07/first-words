@@ -10,7 +10,7 @@ import { format, parseISO } from "date-fns";
 
 type SortKey = "date" | "value" | "category";
 
-export function AssetTable() {
+export function AssetTable({ readOnly = false }: { readOnly?: boolean }) {
   const { filteredAssets, deleteAsset } = useAssets();
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("date");
@@ -79,14 +79,16 @@ export function AssetTable() {
                   <TableCell className="text-xs font-medium">{a.category}</TableCell>
                   <TableCell className="text-xs font-semibold">{fmt(a.value)}</TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditing(a)}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteAsset(a.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    {!readOnly && (
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditing(a)}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteAsset(a.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -95,7 +97,7 @@ export function AssetTable() {
         </Table>
       </div>
 
-      {editing && <AssetForm editAsset={editing} onClose={() => setEditing(null)} />}
+      {!readOnly && editing && <AssetForm editAsset={editing} onClose={() => setEditing(null)} />}
 
       <p className="text-xs text-muted-foreground mt-2">{filtered.length} registro(s)</p>
     </div>

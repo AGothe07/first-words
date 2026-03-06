@@ -17,8 +17,10 @@ import { DynamicGoalForm } from "@/components/goals/DynamicGoalForm";
 import { useDynamicGoalProgress } from "@/hooks/useDynamicGoalProgress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { useReadOnly } from "@/hooks/useReadOnly";
 
 export default function GoalsPage() {
+  const { isReadOnly } = useReadOnly();
   const { user } = useAuth();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,158 +168,113 @@ export default function GoalsPage() {
             </h1>
             <p className="text-sm text-muted-foreground">Defina e acompanhe seus objetivos</p>
           </div>
-          <div className="flex gap-2">
-            {/* Dynamic Goal Dialog */}
-            <Dialog open={dynamicDialogOpen} onOpenChange={setDynamicDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Zap className="h-4 w-4" /> Meta Dinâmica
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5" /> Nova Meta Dinâmica
-                  </DialogTitle>
-                </DialogHeader>
-                <DynamicGoalForm
-                  onSubmit={handleAddDynamic}
-                  onCancel={() => setDynamicDialogOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
+          {!isReadOnly && (
+            <div className="flex gap-2">
+              {/* Dynamic Goal Dialog */}
+              <Dialog open={dynamicDialogOpen} onOpenChange={setDynamicDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Zap className="h-4 w-4" /> Meta Dinâmica
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Zap className="h-5 w-5" /> Nova Meta Dinâmica
+                    </DialogTitle>
+                  </DialogHeader>
+                  <DynamicGoalForm
+                    onSubmit={handleAddDynamic}
+                    onCancel={() => setDynamicDialogOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
 
-            {/* Manual Goal Dialog */}
-            <Dialog open={manualDialogOpen} onOpenChange={setManualDialogOpen}>
-              <DialogTrigger asChild>
-                <Button><Plus className="h-4 w-4 mr-2" /> Nova Meta</Button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[90vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Nova Meta Manual</DialogTitle></DialogHeader>
-                <div className="space-y-4">
-                  <Input placeholder="Título da meta" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
-                  <Textarea placeholder="Descrição (opcional)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-                  <Select value={form.goal_type} onValueChange={v => setForm(f => ({ ...f, goal_type: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="personal">Pessoal</SelectItem>
-                      <SelectItem value="financial">Financeiro</SelectItem>
-                      <SelectItem value="health">Saúde</SelectItem>
-                      <SelectItem value="career">Carreira</SelectItem>
-                      <SelectItem value="education">Educação</SelectItem>
-                      <SelectItem value="other">Outro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input type="number" placeholder="Valor alvo (ex: 10000)" value={form.target_value} onChange={e => setForm(f => ({ ...f, target_value: e.target.value }))} />
-                    <Select value={form.unit} onValueChange={v => setForm(f => ({ ...f, unit: v }))}>
-                      <SelectTrigger><SelectValue placeholder="Unidade" /></SelectTrigger>
+              {/* Manual Goal Dialog */}
+              <Dialog open={manualDialogOpen} onOpenChange={setManualDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="h-4 w-4 mr-2" /> Nova Meta</Button>
+                </DialogTrigger>
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
+                  <DialogHeader><DialogTitle>Nova Meta Manual</DialogTitle></DialogHeader>
+                  <div className="space-y-4">
+                    <Input placeholder="Título da meta" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+                    <Textarea placeholder="Descrição (opcional)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+                    <Select value={form.goal_type} onValueChange={v => setForm(f => ({ ...f, goal_type: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Monetário</SelectLabel>
-                          <SelectItem value="R$">R$ (Reais)</SelectItem>
-                          <SelectItem value="US$">US$ (Dólares)</SelectItem>
-                        </SelectGroup>
-                        <SelectGroup>
-                          <SelectLabel>Proporção</SelectLabel>
-                          <SelectItem value="%">% (Percentual)</SelectItem>
-                        </SelectGroup>
-                        <SelectGroup>
-                          <SelectLabel>Quantidade</SelectLabel>
-                          <SelectItem value="un">Unidades</SelectItem>
-                          <SelectItem value="kg">Quilos</SelectItem>
-                          <SelectItem value="km">Quilômetros</SelectItem>
-                        </SelectGroup>
-                        <SelectGroup>
-                          <SelectLabel>Tempo</SelectLabel>
-                          <SelectItem value="h">Horas</SelectItem>
-                          <SelectItem value="dias">Dias</SelectItem>
-                          <SelectItem value="sem">Semanas</SelectItem>
-                          <SelectItem value="meses">Meses</SelectItem>
-                        </SelectGroup>
+                        <SelectItem value="personal">Pessoal</SelectItem>
+                        <SelectItem value="financial">Financeiro</SelectItem>
+                        <SelectItem value="health">Saúde</SelectItem>
+                        <SelectItem value="career">Carreira</SelectItem>
+                        <SelectItem value="education">Educação</SelectItem>
+                        <SelectItem value="other">Outro</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Valor atual / inicial (opcional)</Label>
-                    <Input type="number" placeholder="Ex: 5000" value={form.baseline_value} onChange={e => setForm(f => ({ ...f, baseline_value: e.target.value }))} />
-                  </div>
-                  <div>
-                    <Label className="text-xs font-medium mb-2 block">Modo de Progresso</Label>
-                    <RadioGroup value={form.progress_mode} onValueChange={v => setForm(f => ({ ...f, progress_mode: v as GoalProgressMode }))}>
-                      <div className="flex items-start gap-2">
-                        <RadioGroupItem value="evolution" id="manual-evolution" className="mt-0.5" />
-                        <label htmlFor="manual-evolution" className="text-sm cursor-pointer">
-                          <span className="font-medium">Evolutivo</span>
-                          <p className="text-[10px] text-muted-foreground">Progresso = valor atual / valor alvo</p>
-                        </label>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <RadioGroupItem value="remaining" id="manual-remaining" className="mt-0.5" />
-                        <label htmlFor="manual-remaining" className="text-sm cursor-pointer">
-                          <span className="font-medium">Valor Restante</span>
-                          <p className="text-[10px] text-muted-foreground">Mostra o crescimento desde o valor inicial até o alvo</p>
-                        </label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Prazo (opcional)</Label>
-                    <Input type="date" value={form.target_date} onChange={e => setForm(f => ({ ...f, target_date: e.target.value }))} />
-                  </div>
-                  <Button className="w-full" onClick={handleAddManual}>Criar Meta</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            {/* Edit Goal Dialog */}
-            <Dialog open={!!editingGoal} onOpenChange={open => { if (!open) setEditingGoal(null); }}>
-              <DialogContent className="max-h-[90vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Editar Meta</DialogTitle></DialogHeader>
-                <div className="space-y-4">
-                  <Input placeholder="Título" value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} />
-                  <Textarea placeholder="Descrição (opcional)" value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} />
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-xs">Valor alvo</Label>
-                      <Input type="number" value={editForm.target_value} onChange={e => setEditForm(f => ({ ...f, target_value: e.target.value }))} />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input type="number" placeholder="Valor alvo (ex: 10000)" value={form.target_value} onChange={e => setForm(f => ({ ...f, target_value: e.target.value }))} />
+                      <Select value={form.unit} onValueChange={v => setForm(f => ({ ...f, unit: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Unidade" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup><SelectLabel>Monetário</SelectLabel><SelectItem value="R$">R$ (Reais)</SelectItem><SelectItem value="US$">US$ (Dólares)</SelectItem></SelectGroup>
+                          <SelectGroup><SelectLabel>Proporção</SelectLabel><SelectItem value="%">% (Percentual)</SelectItem></SelectGroup>
+                          <SelectGroup><SelectLabel>Quantidade</SelectLabel><SelectItem value="un">Unidades</SelectItem><SelectItem value="kg">Quilos</SelectItem><SelectItem value="km">Quilômetros</SelectItem></SelectGroup>
+                          <SelectGroup><SelectLabel>Tempo</SelectLabel><SelectItem value="h">Horas</SelectItem><SelectItem value="dias">Dias</SelectItem><SelectItem value="sem">Semanas</SelectItem><SelectItem value="meses">Meses</SelectItem></SelectGroup>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    {!editingGoal?.data_source && (
-                      <div>
-                        <Label className="text-xs">Valor atual</Label>
-                        <Input type="number" value={editForm.current_value} onChange={e => setEditForm(f => ({ ...f, current_value: e.target.value }))} />
-                      </div>
-                    )}
+                    <div>
+                      <Label className="text-xs">Valor atual / inicial (opcional)</Label>
+                      <Input type="number" placeholder="Ex: 5000" value={form.baseline_value} onChange={e => setForm(f => ({ ...f, baseline_value: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium mb-2 block">Modo de Progresso</Label>
+                      <RadioGroup value={form.progress_mode} onValueChange={v => setForm(f => ({ ...f, progress_mode: v as GoalProgressMode }))}>
+                        <div className="flex items-start gap-2">
+                          <RadioGroupItem value="evolution" id="manual-evolution" className="mt-0.5" />
+                          <label htmlFor="manual-evolution" className="text-sm cursor-pointer"><span className="font-medium">Evolutivo</span><p className="text-[10px] text-muted-foreground">Progresso = valor atual / valor alvo</p></label>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <RadioGroupItem value="remaining" id="manual-remaining" className="mt-0.5" />
+                          <label htmlFor="manual-remaining" className="text-sm cursor-pointer"><span className="font-medium">Valor Restante</span><p className="text-[10px] text-muted-foreground">Mostra o crescimento desde o valor inicial até o alvo</p></label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Prazo (opcional)</Label>
+                      <Input type="date" value={form.target_date} onChange={e => setForm(f => ({ ...f, target_date: e.target.value }))} />
+                    </div>
+                    <Button className="w-full" onClick={handleAddManual}>Criar Meta</Button>
                   </div>
-                  <div>
-                    <Label className="text-xs font-medium mb-2 block">Modo de Progresso</Label>
-                    <RadioGroup value={editForm.progress_mode} onValueChange={v => setEditForm(f => ({ ...f, progress_mode: v as GoalProgressMode }))}>
-                      <div className="flex items-start gap-2">
-                        <RadioGroupItem value="evolution" id="edit-evolution" className="mt-0.5" />
-                        <label htmlFor="edit-evolution" className="text-sm cursor-pointer">
-                          <span className="font-medium">Evolutivo</span>
-                        </label>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <RadioGroupItem value="remaining" id="edit-remaining" className="mt-0.5" />
-                        <label htmlFor="edit-remaining" className="text-sm cursor-pointer">
-                          <span className="font-medium">Valor Restante</span>
-                        </label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Prazo (opcional)</Label>
-                    <Input type="date" value={editForm.target_date} onChange={e => setEditForm(f => ({ ...f, target_date: e.target.value }))} />
-                  </div>
-                  <Button className="w-full" onClick={handleSaveEdit}>Salvar Alterações</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
+                </DialogContent>
+              </Dialog>
 
-        {/* KPIs */}
+              {/* Edit Goal Dialog */}
+              <Dialog open={!!editingGoal} onOpenChange={open => { if (!open) setEditingGoal(null); }}>
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
+                  <DialogHeader><DialogTitle>Editar Meta</DialogTitle></DialogHeader>
+                  <div className="space-y-4">
+                    <Input placeholder="Título" value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} />
+                    <Textarea placeholder="Descrição (opcional)" value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div><Label className="text-xs">Valor alvo</Label><Input type="number" value={editForm.target_value} onChange={e => setEditForm(f => ({ ...f, target_value: e.target.value }))} /></div>
+                      {!editingGoal?.data_source && (<div><Label className="text-xs">Valor atual</Label><Input type="number" value={editForm.current_value} onChange={e => setEditForm(f => ({ ...f, current_value: e.target.value }))} /></div>)}
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium mb-2 block">Modo de Progresso</Label>
+                      <RadioGroup value={editForm.progress_mode} onValueChange={v => setEditForm(f => ({ ...f, progress_mode: v as GoalProgressMode }))}>
+                        <div className="flex items-start gap-2"><RadioGroupItem value="evolution" id="edit-evolution" className="mt-0.5" /><label htmlFor="edit-evolution" className="text-sm cursor-pointer"><span className="font-medium">Evolutivo</span></label></div>
+                        <div className="flex items-start gap-2"><RadioGroupItem value="remaining" id="edit-remaining" className="mt-0.5" /><label htmlFor="edit-remaining" className="text-sm cursor-pointer"><span className="font-medium">Valor Restante</span></label></div>
+                      </RadioGroup>
+                    </div>
+                    <div><Label className="text-xs">Prazo (opcional)</Label><Input type="date" value={editForm.target_date} onChange={e => setEditForm(f => ({ ...f, target_date: e.target.value }))} /></div>
+                    <Button className="w-full" onClick={handleSaveEdit}>Salvar Alterações</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{activeGoals.length}</p><p className="text-xs text-muted-foreground">Ativas</p></CardContent></Card>
           <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-warning">{pausedGoals.length}</p><p className="text-xs text-muted-foreground">Pausadas</p></CardContent></Card>

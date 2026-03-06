@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, XCircle, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { useThrottle } from "@/hooks/useDebounce";
 import * as XLSX from "xlsx";
+import { useReadOnly } from "@/hooks/useReadOnly";
 
 interface FieldDef {
   key: string;
@@ -55,6 +56,7 @@ interface ColumnData {
 }
 
 export default function ImportPage() {
+  const { isReadOnly } = useReadOnly();
   const { categories, subcategories, persons, refreshData: refreshFinance } = useFinance();
   const { assetCategories, refreshData: refreshAssets } = useAssets();
   const { user } = useAuth();
@@ -376,10 +378,10 @@ export default function ImportPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2"><Upload className="h-4 w-4" /> Selecione o Arquivo</CardTitle>
-            <CardDescription>CSV ou Excel (.xlsx/.xls), máximo 5MB</CardDescription>
+            <CardDescription>{isReadOnly ? "Importação desabilitada no modo somente leitura" : "CSV ou Excel (.xlsx/.xls), máximo 5MB"}</CardDescription>
           </CardHeader>
           <CardContent>
-            <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer" />
+            <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} disabled={isReadOnly} className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" />
           </CardContent>
         </Card>
       )}
