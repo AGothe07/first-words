@@ -97,7 +97,7 @@ export function AssetTable({ readOnly = false }: { readOnly?: boolean }) {
         </Table>
       </div>
 
-      {editing && <AssetForm editAsset={editing} onClose={() => setEditing(null)} />}
+      {!readOnly && editing && <AssetForm editAsset={editing} onClose={() => setEditing(null)} />}
 
       <p className="text-xs text-muted-foreground mt-2">{filtered.length} registro(s)</p>
     </div>
