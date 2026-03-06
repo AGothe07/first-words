@@ -16,6 +16,7 @@ import { format, parseISO, differenceInDays, setYear, isBefore, startOfDay } fro
 import { ptBR } from "date-fns/locale";
 import { Plus, PartyPopper, Trash2, Cake, Heart, Star, CalendarHeart, Gift, Phone, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useReadOnly } from "@/hooks/useReadOnly";
 
 type ImportantEvent = {
   id: string;
