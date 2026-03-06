@@ -10,7 +10,7 @@ import { format, parseISO } from "date-fns";
 
 type SortKey = "date" | "value" | "category";
 
-export function AssetTable() {
+export function AssetTable({ readOnly = false }: { readOnly?: boolean }) {
   const { filteredAssets, deleteAsset } = useAssets();
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("date");
