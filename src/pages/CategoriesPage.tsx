@@ -18,6 +18,7 @@ import { useThrottle } from "@/hooks/useDebounce";
 type CategoryType = TransactionType | "asset";
 
 export default function CategoriesPage() {
+  const { isReadOnly } = useReadOnly();
   const { categories, subcategories, addCategory, updateCategory, deleteCategory, addSubcategory, updateSubcategory, deleteSubcategory } = useFinance();
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<CategoryType>("expense");
