@@ -288,6 +288,7 @@ export function TransactionTable({ readOnly = false }: { readOnly?: boolean }) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="rounded-lg border overflow-auto">
