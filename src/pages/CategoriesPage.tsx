@@ -70,6 +70,7 @@ export default function CategoriesPage() {
               <SelectItem value="asset">Patrimônio</SelectItem>
             </SelectContent>
           </Select>
+          {!isReadOnly && (
           <Dialog open={openAdd} onOpenChange={setOpenAdd}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1"><Plus className="h-4 w-4" /> Nova Categoria</Button>
@@ -96,6 +97,7 @@ export default function CategoriesPage() {
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </div>
 
