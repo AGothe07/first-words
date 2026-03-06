@@ -165,6 +165,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         isTrialExpired,
         isExpired,
         isCancelled,
+        isOverdue,
+        isReadOnly,
         daysRemaining,
         hasManualAccess,
         refreshSubscription: fetchSubscription,
