@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { useReadOnly } from "@/hooks/useReadOnly";
 
 export default function GoalsPage() {
+  const { isReadOnly } = useReadOnly();
   const { user } = useAuth();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
