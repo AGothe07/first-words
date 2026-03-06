@@ -67,6 +67,7 @@ export default function PersonsManagePage() {
               ) : (
                 <span className={`text-sm font-medium ${!p.is_active ? "text-muted-foreground line-through" : ""}`}>{p.name}</span>
               )}
+              {!isReadOnly && (
               <div className="flex items-center gap-2">
                 <Switch checked={p.is_active} onCheckedChange={v => updatePerson(p.id, p.name, v)} />
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingId(p.id); setEditName(p.name); }}>
@@ -76,6 +77,7 @@ export default function PersonsManagePage() {
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
+              )}
             </CardContent>
           </Card>
         ))}

@@ -126,6 +126,7 @@ export default function CategoriesPage() {
                     <Badge variant="outline" className="text-[10px]">{typeLabel(cat.type)}</Badge>
                     {subs.length > 0 && <Badge variant="secondary" className="text-[10px]">{subs.length} sub</Badge>}
                   </div>
+                  {!isReadOnly && (
                   <div className="flex items-center gap-2">
                     <Switch checked={cat.is_active} onCheckedChange={v => updateCategory(cat.id, cat.name, v)} />
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingCat(cat.id); setEditName(cat.name); }}>
@@ -135,6 +136,7 @@ export default function CategoriesPage() {
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
+                  )}
                 </div>
 
                 {isExpanded && (
