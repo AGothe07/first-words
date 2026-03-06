@@ -15,6 +15,7 @@ import { useReadOnly } from "@/hooks/useReadOnly";
 
 export default function AgendaPage() {
   const { user } = useAuth();
+  const { isReadOnly } = useReadOnly();
   const [items, setItems] = useState<AgendaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<CalendarView>("week");
