@@ -16,7 +16,7 @@ const PUBLIC_SUBSCRIPTION_ROUTES = [
 ];
 
 export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
-  const { hasValidAccess, loading, isTrialExpired, hasNoSubscription } = useSubscription();
+  const { hasValidAccess, loading, isReadOnly, hasNoSubscription } = useSubscription();
   const { isAdmin, loading: roleLoading } = useUserRole();
   const location = useLocation();
 
@@ -36,15 +36,17 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // No access
-  if (!hasValidAccess) {
-    // New user with no subscription → redirect to start trial
-    if (hasNoSubscription) {
-      return <Navigate to="/start-trial" replace />;
-    }
-    // Expired trial or subscription → blocked page
-    return <Navigate to="/subscription/blocked" replace />;
+  // No access at all — new user with no subscription
+  if (hasNoSubscription) {
+    return <Navigate to="/start-trial" replace />;
   }
 
-  return <>{children}</>;
+  // Has valid access OR is in read-only mode → allow through
+  // (read-only restrictions are handled by the banner + context)
+  if (hasValidAccess || isReadOnly) {
+    return <>{children}</>;
+  }
+
+  // Fallback: redirect to blocked page
+  return <Navigate to="/subscription/blocked" replace />;
 }

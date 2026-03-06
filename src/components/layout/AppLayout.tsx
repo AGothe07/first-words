@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import { SubscriptionBanner } from "./SubscriptionBanner";
 import { PanelLeft } from "lucide-react";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useApplyPreferences } from "@/hooks/useApplyPreferences";
@@ -12,6 +13,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <main className="flex-1 overflow-auto">
+          <SubscriptionBanner />
           <div className="flex items-center gap-2 border-b border-border px-4 py-2">
             <SidebarTrigger>
               <PanelLeft className="h-5 w-5" />
