@@ -38,6 +38,8 @@ interface SubscriptionContextType {
   isTrialExpired: boolean;
   isExpired: boolean;
   isCancelled: boolean;
+  isOverdue: boolean;
+  isReadOnly: boolean;
   daysRemaining: number;
   hasManualAccess: boolean;
   refreshSubscription: () => Promise<void>;
