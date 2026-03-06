@@ -120,11 +120,17 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const isCancelled = !!subscription?.cancelled_at;
 
+  const isOverdue = subscription?.status === "overdue";
+
   const hasManualAccess = !!subscription?.manual_access_expires_at &&
     new Date(subscription.manual_access_expires_at) > now;
 
   const hasNoSubscription = !loading && !subscription;
   const hasValidAccess = isActive || isTrialActive || hasManualAccess;
+
+  // Read-only: user has a subscription but it's expired/overdue/trial expired
+  // They can still view data but cannot create/edit
+  const isReadOnly = !loading && !hasValidAccess && !hasNoSubscription;
 
   const daysRemaining = (() => {
     const expiresAt = subscription?.access_expires_at || subscription?.trial_ends_at;
