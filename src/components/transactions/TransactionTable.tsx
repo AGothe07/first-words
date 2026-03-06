@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 
 type SortKey = "date" | "amount" | "person_name" | "category_name";
 
-export function TransactionTable() {
+export function TransactionTable({ readOnly = false }: { readOnly?: boolean }) {
   const { filteredTransactions, deleteTransaction, bulkDeleteTransactions, categories, subcategories, persons } = useFinance();
   const { isDimensionActive } = useDimensions();
   const [search, setSearch] = useState("");
