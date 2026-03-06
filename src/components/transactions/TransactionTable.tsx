@@ -140,12 +140,13 @@ export function TransactionTable({ readOnly = false }: { readOnly?: boolean }) {
           <Download className="h-4 w-4" /> Exportar CSV
         </Button>
 
-        <Dialog open={bulkOpen} onOpenChange={(open) => { setBulkOpen(open); if (!open) resetBulkFilters(); }}>
-          <DialogTrigger asChild>
-            <Button variant="destructive" size="sm" className="gap-1">
-              <Trash2 className="h-4 w-4" /> Exclusão em Massa
-            </Button>
-          </DialogTrigger>
+        {!readOnly && (
+          <Dialog open={bulkOpen} onOpenChange={(open) => { setBulkOpen(open); if (!open) resetBulkFilters(); }}>
+            <DialogTrigger asChild>
+              <Button variant="destructive" size="sm" className="gap-1">
+                <Trash2 className="h-4 w-4" /> Exclusão em Massa
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
