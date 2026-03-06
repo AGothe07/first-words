@@ -193,7 +193,7 @@ export default function AgendaPage() {
           view={view}
           onDateChange={setCurrentDate}
           onViewChange={setView}
-          onNewEvent={() => openCreate()}
+          onNewEvent={() => !isReadOnly && openCreate()}
         />
 
         {view === "month" && (

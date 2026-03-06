@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, XCircle, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { useThrottle } from "@/hooks/useDebounce";
 import * as XLSX from "xlsx";
+import { useReadOnly } from "@/hooks/useReadOnly";
 
 interface FieldDef {
   key: string;

@@ -249,6 +249,7 @@ export default function EventsPage() {
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><PartyPopper className="h-6 w-6 text-primary" /> Datas Importantes</h1>
             <p className="text-sm text-muted-foreground">Nunca esqueça um aniversário ou data especial</p>
           </div>
+          {!isReadOnly && (
           <Dialog open={dialogOpen} onOpenChange={v => { setDialogOpen(v); if (!v) setEditingEvent(null); }}>
             <DialogTrigger asChild><Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Novo Evento</Button></DialogTrigger>
             <DialogContent>
@@ -256,6 +257,7 @@ export default function EventsPage() {
               {renderForm()}
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         {upcoming.length > 0 && (
