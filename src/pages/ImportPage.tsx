@@ -55,6 +55,7 @@ interface ColumnData {
 }
 
 export default function ImportPage() {
+  const { isReadOnly } = useReadOnly();
   const { categories, subcategories, persons, refreshData: refreshFinance } = useFinance();
   const { assetCategories, refreshData: refreshAssets } = useAssets();
   const { user } = useAuth();
