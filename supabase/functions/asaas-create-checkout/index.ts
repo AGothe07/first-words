@@ -56,15 +56,65 @@ Deno.serve(async (req) => {
     const cpfClean = customerData.cpfCnpj.replace(/\D/g, "");
     const emailClean = customerData.email.toLowerCase().trim();
 
-    // Cancel ALL pending subscriptions for this email
-    const { data: existingSubs } = await supabase
+    // ══════════════════════════════════════════════════
+    // SMART RENEWAL: Check for existing pending payments
+    // ══════════════════════════════════════════════════
+
+    // Check if user has an existing subscription with pending payment in Asaas
+    const { data: existingActiveSubs } = await supabase
+      .from("subscriptions")
+      .select("id, status, asaas_subscription_id, asaas_customer_id")
+      .eq("customer_email", emailClean)
+      .in("status", ["active", "overdue", "pending"])
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (existingActiveSubs && existingActiveSubs.length > 0) {
+      const existingSub = existingActiveSubs[0];
+
+      // If overdue or pending, try to find an existing pending payment to redirect to
+      if ((existingSub.status === "overdue" || existingSub.status === "pending") && existingSub.asaas_subscription_id) {
+        const pendingPaymentsRes = await fetch(
+          `${ASAAS_API_URL}/subscriptions/${existingSub.asaas_subscription_id}/payments?status=PENDING&status=OVERDUE&limit=1`,
+          { headers: { access_token: ASAAS_API_KEY } }
+        );
+        const pendingPaymentsData = await pendingPaymentsRes.json();
+
+        if (pendingPaymentsData.data?.length > 0) {
+          const pendingPayment = pendingPaymentsData.data[0];
+          if (pendingPayment.invoiceUrl) {
+            console.log(`Smart renewal: redirecting to existing pending payment ${pendingPayment.id}`);
+            return new Response(
+              JSON.stringify({
+                checkoutUrl: pendingPayment.invoiceUrl,
+                subscriptionId: existingSub.id,
+                customerId: existingSub.asaas_customer_id,
+                reusedPendingPayment: true,
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
+      }
+
+      // If active subscription exists, block
+      if (existingSub.status === "active") {
+        return new Response(JSON.stringify({ error: "Já existe uma assinatura ativa para este email" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // Cancel ALL old pending subscriptions for this email
+    const { data: pendingSubs } = await supabase
       .from("subscriptions")
       .select("id, status, asaas_subscription_id")
       .eq("customer_email", emailClean)
       .eq("status", "pending");
 
-    if (existingSubs && existingSubs.length > 0) {
-      for (const sub of existingSubs) {
+    if (pendingSubs && pendingSubs.length > 0) {
+      for (const sub of pendingSubs) {
         if (sub.asaas_subscription_id) {
           await fetch(`${ASAAS_API_URL}/subscriptions/${sub.asaas_subscription_id}`, {
             method: "DELETE",
@@ -78,19 +128,23 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Block if there's an active subscription for this email
-    const { data: activeSubs } = await supabase
+    // For overdue/cancelled subscriptions, cancel the old Asaas subscription before creating new
+    const { data: oldSubs } = await supabase
       .from("subscriptions")
-      .select("id")
+      .select("id, asaas_subscription_id")
       .eq("customer_email", emailClean)
-      .eq("status", "active")
-      .limit(1);
+      .in("status", ["overdue", "cancelled", "inactive", "trial_expired"])
+      .not("asaas_subscription_id", "is", null);
 
-    if (activeSubs && activeSubs.length > 0) {
-      return new Response(JSON.stringify({ error: "Já existe uma assinatura ativa para este email" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (oldSubs && oldSubs.length > 0) {
+      for (const sub of oldSubs) {
+        if (sub.asaas_subscription_id) {
+          await fetch(`${ASAAS_API_URL}/subscriptions/${sub.asaas_subscription_id}`, {
+            method: "DELETE",
+            headers: { access_token: ASAAS_API_KEY },
+          }).catch(() => {});
+        }
+      }
     }
 
     // Search or create customer in Asaas
@@ -129,7 +183,7 @@ Deno.serve(async (req) => {
       ? { value: 200, cycle: "YEARLY", description: "Plano Anual" }
       : { value: 20, cycle: "MONTHLY", description: "Plano Mensal" };
 
-    // Create pending subscription in DB — linked to user if authenticated
+    // Create pending subscription in DB
     const { data: subscription, error: subError } = await supabase
       .from("subscriptions")
       .insert({
