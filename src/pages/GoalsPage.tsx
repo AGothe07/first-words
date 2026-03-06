@@ -317,7 +317,7 @@ export default function GoalsPage() {
               </DialogContent>
             </Dialog>
           </div>
-        </div>
+          )}
 
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
