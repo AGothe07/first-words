@@ -62,6 +62,7 @@ export default function AgendaPage() {
 
   // Open create dialog with pre-filled date/time
   const openCreate = (date?: Date) => {
+    if (isReadOnly) return;
     setEditingItem(null);
     const d = date || new Date();
     setForm({
