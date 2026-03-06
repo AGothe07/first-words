@@ -1273,6 +1273,7 @@ export type Database = {
           function_key: string | null
           id: string
           is_active: boolean
+          payload_fields: Json
           updated_at: string
           url: string
         }
@@ -1283,6 +1284,7 @@ export type Database = {
           function_key?: string | null
           id?: string
           is_active?: boolean
+          payload_fields?: Json
           updated_at?: string
           url: string
         }
@@ -1293,6 +1295,7 @@ export type Database = {
           function_key?: string | null
           id?: string
           is_active?: boolean
+          payload_fields?: Json
           updated_at?: string
           url?: string
         }

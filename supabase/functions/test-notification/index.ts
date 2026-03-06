@@ -5,14 +5,31 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function getWebhookUrl(supabase: any, functionKey: string): Promise<string | null> {
+interface WebhookConfigResult {
+  url: string;
+  payload_fields: Record<string, boolean>;
+}
+
+async function getWebhookConfig(supabase: any, functionKey: string): Promise<WebhookConfigResult | null> {
   const { data } = await supabase
     .from("webhook_configs")
-    .select("url")
+    .select("url, payload_fields")
     .eq("function_key", functionKey)
     .eq("is_active", true)
     .maybeSingle();
-  return data?.url || null;
+  return data ? { url: data.url, payload_fields: data.payload_fields || {} } : null;
+}
+
+function filterPayload(payload: Record<string, any>, payloadFields: Record<string, boolean>): Record<string, any> {
+  const hasConfig = Object.keys(payloadFields).length > 0;
+  if (!hasConfig) return payload;
+  const filtered: Record<string, any> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (payloadFields[key] !== false) {
+      filtered[key] = value;
+    }
+  }
+  return filtered;
 }
 
 Deno.serve(async (req) => {
@@ -48,7 +65,7 @@ Deno.serve(async (req) => {
     }
 
     let payload: Record<string, unknown>;
-    let webhookUrl: string | null;
+    let webhookConfig: WebhookConfigResult | null;
     let itemTitle: string;
 
     if (source_type === "birthday") {
@@ -68,19 +85,26 @@ Deno.serve(async (req) => {
       message = message.replace(/{data}/g, `${String(eventDate.getDate()).padStart(2, "0")}/${String(eventDate.getMonth() + 1).padStart(2, "0")}`);
 
       const { data: waInstance } = await supabase
-        .from("whatsapp_instances").select("token").eq("user_id", user_id).eq("status", "connected").maybeSingle();
+        .from("whatsapp_instances").select("token, instance_name").eq("user_id", user_id).eq("status", "connected").maybeSingle();
+
+      const adminToken = Deno.env.get("EXTERNAL_API_ADMIN_TOKEN") || null;
 
       itemTitle = event.title;
-      webhookUrl = await getWebhookUrl(supabase, "birthday_notification");
-      payload = {
+      webhookConfig = await getWebhookConfig(supabase, "birthday_notification");
+      const fullPayload = {
         nome: event.person_name || event.title,
         celular: event.phone,
         mensagem: message,
         data_aniversario: event.event_date,
+        idade: age,
         envio_antecipado: false,
-        token: waInstance?.token || null,
+        token_usuario: waInstance?.token || null,
+        token_sistema: adminToken,
+        instancia_usuario: waInstance?.instance_name || null,
+        user_id: user_id,
         teste: true,
       };
+      payload = filterPayload(fullPayload, webhookConfig?.payload_fields || {});
     } else {
       const { data: item } = await supabase
         .from("agenda_items").select("*").eq("id", source_id).eq("user_id", user_id).maybeSingle();
@@ -109,19 +133,31 @@ Deno.serve(async (req) => {
       message = message.replace(/{horario_fim}/g, endTime);
 
       itemTitle = item.title;
-      webhookUrl = await getWebhookUrl(supabase, "event_notification");
-      payload = {
+      webhookConfig = await getWebhookConfig(supabase, "event_notification");
+      const adminToken = Deno.env.get("EXTERNAL_API_ADMIN_TOKEN") || null;
+      const { data: waInstance } = await supabase
+        .from("whatsapp_instances").select("token, instance_name").eq("user_id", user_id).eq("status", "connected").maybeSingle();
+
+      const fullPayload = {
         nome: item.title,
         celular: userPhone,
         mensagem: message,
         data_evento: item.start_date,
         horario_inicio: startTime,
         horario_fim: endTime,
+        descricao: item.description || null,
+        prioridade: item.priority || null,
         envio_antecipado: false,
+        token_usuario: waInstance?.token || null,
+        token_sistema: adminToken,
+        instancia_usuario: waInstance?.instance_name || null,
+        user_id: user_id,
         teste: true,
       };
+      payload = filterPayload(fullPayload, webhookConfig?.payload_fields || {});
     }
 
+    const webhookUrl = webhookConfig?.url || null;
     if (!webhookUrl) {
       return new Response(JSON.stringify({ error: "URL do webhook não configurada no painel admin." }), {
         status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },

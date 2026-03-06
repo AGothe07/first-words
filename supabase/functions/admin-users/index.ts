@@ -400,10 +400,10 @@ Deno.serve(async (req) => {
           .limit(1)
           .maybeSingle();
 
-        // Fetch webhook URL for deletion
+        // Fetch webhook config for deletion (URL + payload_fields)
         const { data: whDeleteHook } = await svc
           .from("webhook_configs")
-          .select("url")
+          .select("url, payload_fields")
           .eq("function_key", "whatsapp_delete")
           .eq("is_active", true)
           .limit(1)
@@ -412,19 +412,38 @@ Deno.serve(async (req) => {
         // Call external webhook to delete the instance
         if (whDeleteHook?.url) {
           try {
+            const fullPayload: Record<string, unknown> = {
+              token_usuario: waInstance.token,
+              instance_name: waInstance.instance_name,
+              instance_id: waInstance.id,
+              celular: null,
+              user_id: targetUserId,
+              token_sistema: Deno.env.get("EXTERNAL_API_ADMIN_TOKEN") || null,
+              instancia_usuario: waInstance.instance_name || null,
+              api_key_admin: apiKeySetting?.setting_value || "",
+            };
+
+            // Filter payload based on webhook config fields
+            const payloadFields = (whDeleteHook.payload_fields as Record<string, boolean>) || {};
+            const hasConfig = Object.keys(payloadFields).length > 0;
+            let payload = fullPayload;
+            if (hasConfig) {
+              const filtered: Record<string, unknown> = {};
+              for (const [key, value] of Object.entries(fullPayload)) {
+                if (payloadFields[key] !== false) {
+                  filtered[key] = value;
+                }
+              }
+              payload = filtered;
+            }
+
             await fetch(whDeleteHook.url, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                token: waInstance.token,
-                instance_name: waInstance.instance_name,
-                instance_id: waInstance.id,
-                user_id: targetUserId,
-                api_key_admin: apiKeySetting?.setting_value || "",
-              }),
+              body: JSON.stringify(payload),
             });
           } catch (e) {
-            console.error("Webhook delete call failed:", e);
+            console.error("Erro ao chamar webhook de exclusão:", e);
           }
         }
 

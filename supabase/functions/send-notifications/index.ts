@@ -31,14 +31,32 @@ function parseTimeToMinutes(timeStr: string): number {
   return (h || 0) * 60 + (m || 0);
 }
 
-async function getWebhookUrl(supabase: any, functionKey: string): Promise<string | null> {
+interface WebhookConfigResult {
+  url: string;
+  payload_fields: Record<string, boolean>;
+}
+
+async function getWebhookConfig(supabase: any, functionKey: string): Promise<WebhookConfigResult | null> {
   const { data } = await supabase
     .from("webhook_configs")
-    .select("url")
+    .select("url, payload_fields")
     .eq("function_key", functionKey)
     .eq("is_active", true)
     .maybeSingle();
-  return data?.url || null;
+  return data ? { url: data.url, payload_fields: data.payload_fields || {} } : null;
+}
+
+/** Filter payload based on payload_fields config. If no config, send all. */
+function filterPayload(payload: Record<string, any>, payloadFields: Record<string, boolean>): Record<string, any> {
+  const hasConfig = Object.keys(payloadFields).length > 0;
+  if (!hasConfig) return payload;
+  const filtered: Record<string, any> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (payloadFields[key] !== false) {
+      filtered[key] = value;
+    }
+  }
+  return filtered;
 }
 
 // Wider catch-up window: 30 minutes instead of 10
@@ -53,8 +71,11 @@ Deno.serve(async (req) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-  const BIRTHDAY_WEBHOOK_URL = await getWebhookUrl(supabase, "birthday_notification");
-  const EVENT_WEBHOOK_URL = await getWebhookUrl(supabase, "event_notification");
+  const birthdayConfig = await getWebhookConfig(supabase, "birthday_notification");
+  const eventConfig = await getWebhookConfig(supabase, "event_notification");
+
+  const BIRTHDAY_WEBHOOK_URL = birthdayConfig?.url || null;
+  const EVENT_WEBHOOK_URL = eventConfig?.url || null;
 
   const nowBrazil = getBrazilNow();
   const nowTotalMinutes = nowBrazil.getHours() * 60 + nowBrazil.getMinutes();
@@ -156,19 +177,28 @@ Deno.serve(async (req) => {
 
             const { data: waInstance } = await supabase
               .from("whatsapp_instances")
-              .select("token")
+              .select("token, instance_name")
               .eq("user_id", setting.user_id)
               .eq("status", "connected")
               .maybeSingle();
 
-            const payload = {
+            const adminToken = Deno.env.get("EXTERNAL_API_ADMIN_TOKEN") || null;
+
+            const fullPayload: Record<string, any> = {
               nome: event.person_name || event.title,
               celular: event.phone,
               mensagem: message,
               data_aniversario: event.event_date,
+              idade: age,
               envio_antecipado: send.isAdvance,
-              token: waInstance?.token || null,
+              token_usuario: waInstance?.token || null,
+              token_sistema: adminToken,
+              instancia_usuario: waInstance?.instance_name || null,
+              user_id: setting.user_id,
+              teste: false,
             };
+
+            const payload = filterPayload(fullPayload, birthdayConfig?.payload_fields || {});
 
             try {
               const resp = await fetch(BIRTHDAY_WEBHOOK_URL, {
@@ -255,10 +285,12 @@ Deno.serve(async (req) => {
 
         const { data: waInstance } = await supabase
           .from("whatsapp_instances")
-          .select("token")
+          .select("token, instance_name")
           .eq("user_id", userId)
           .eq("status", "connected")
           .maybeSingle();
+
+        const adminToken = Deno.env.get("EXTERNAL_API_ADMIN_TOKEN") || null;
 
         const { data: agendaItems } = await supabase
           .from("agenda_items")
@@ -354,16 +386,24 @@ Deno.serve(async (req) => {
 
             const targetPhone = item.phone || userPhone;
 
-            const payload = {
+            const fullPayload: Record<string, any> = {
               nome: item.title,
               celular: targetPhone,
               mensagem: message,
               data_evento: item.start_date,
               horario_inicio: startTime,
               horario_fim: endTime,
+              descricao: item.description || null,
+              prioridade: item.priority || null,
               envio_antecipado: send.isAdvance,
-              token: waInstance?.token || null,
+              token_usuario: waInstance?.token || null,
+              token_sistema: adminToken,
+              instancia_usuario: waInstance?.instance_name || null,
+              user_id: userId,
+              teste: false,
             };
+
+            const payload = filterPayload(fullPayload, eventConfig?.payload_fields || {});
 
             try {
               const resp = await fetch(EVENT_WEBHOOK_URL, {

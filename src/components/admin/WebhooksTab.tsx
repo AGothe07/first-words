@@ -12,7 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Pencil, RefreshCw } from "lucide-react";
+import { Loader2, Pencil, RefreshCw, Settings2 } from "lucide-react";
+import { WebhookFieldsDialog } from "./WebhookFieldsDialog";
+import { getFieldsForFunction } from "./webhook-fields-config";
 
 const FUNCTION_KEY_LABELS: Record<string, string> = {
   birthday_notification: "📅 Notificação de Aniversário",
@@ -21,6 +23,7 @@ const FUNCTION_KEY_LABELS: Record<string, string> = {
   whatsapp_create: "📱 WhatsApp - Criar Instância",
   whatsapp_connect: "📱 WhatsApp - Conectar (QR Code)",
   whatsapp_disconnect: "📱 WhatsApp - Desconectar",
+  whatsapp_delete: "🗑️ WhatsApp - Deletar Instância",
   whatsapp_code: "🔐 WhatsApp - Envio de Código",
 };
 
@@ -32,6 +35,7 @@ interface WebhookConfig {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  payload_fields: Record<string, boolean>;
 }
 
 interface WebhookLog {
@@ -51,7 +55,8 @@ export function WebhooksTab() {
   const [formUrl, setFormUrl] = useState("");
   const [formDesc, setFormDesc] = useState("");
   const [saving, setSaving] = useState(false);
-
+  const [fieldsDialogOpen, setFieldsDialogOpen] = useState(false);
+  const [fieldsConfig, setFieldsConfig] = useState<WebhookConfig | null>(null);
   const fetchData = useCallback(async () => {
     setLoading(true);
     const [cfgRes, logRes] = await Promise.all([
@@ -122,6 +127,7 @@ export function WebhooksTab() {
                 <TableHead>URL</TableHead>
                 <TableHead>Descrição</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Variáveis</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -147,6 +153,31 @@ export function WebhooksTab() {
                     </Badge>
                   </TableCell>
                   <TableCell>
+                    {(() => {
+                      const available = getFieldsForFunction(cfg.function_key);
+                      const pf = cfg.payload_fields || {};
+                      const hasConfig = Object.keys(pf).length > 0;
+                      const enabledCount = hasConfig
+                        ? Object.values(pf).filter(Boolean).length
+                        : available.length;
+                      return (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[10px]"
+                          onClick={() => {
+                            setFieldsConfig(cfg);
+                            setFieldsDialogOpen(true);
+                          }}
+                          disabled={available.length === 0}
+                        >
+                          <Settings2 className="h-3 w-3 mr-1" />
+                          {available.length > 0 ? `${enabledCount}/${available.length}` : "—"}
+                        </Button>
+                      );
+                    })()}
+                  </TableCell>
+                  <TableCell>
                     <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => openEdit(cfg)}>
                       <Pencil className="h-3 w-3 mr-1" /> Editar
                     </Button>
@@ -155,7 +186,7 @@ export function WebhooksTab() {
               ))}
               {configs.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground text-sm py-4">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground text-sm py-4">
                     Nenhum webhook configurado
                   </TableCell>
                 </TableRow>
@@ -232,6 +263,18 @@ export function WebhooksTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <WebhookFieldsDialog
+        open={fieldsDialogOpen}
+        onOpenChange={setFieldsDialogOpen}
+        config={fieldsConfig}
+        functionLabel={
+          fieldsConfig?.function_key
+            ? (FUNCTION_KEY_LABELS[fieldsConfig.function_key] || fieldsConfig.function_key)
+            : ""
+        }
+        onSaved={fetchData}
+      />
     </div>
   );
 }

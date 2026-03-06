@@ -1,0 +1,1 @@
+ALTER TABLE public.webhook_configs ADD COLUMN payload_fields jsonb DEFAULT '{}' NOT NULL;
