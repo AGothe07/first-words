@@ -77,6 +77,7 @@ export default function AgendaPage() {
   };
 
   const openEdit = (ev: CalendarEvent) => {
+    if (isReadOnly) return;
     const item = items.find(i => i.id === ev.originalId);
     if (!item) return;
     setEditingItem(item);
