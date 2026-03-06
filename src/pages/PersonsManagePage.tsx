@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useThrottle } from "@/hooks/useDebounce";
 
 export default function PersonsManagePage() {
+  const { isReadOnly } = useReadOnly();
   const { persons, addPerson, updatePerson, deletePerson } = useFinance();
   const [newName, setNewName] = useState("");
   const [openAdd, setOpenAdd] = useState(false);
