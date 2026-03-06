@@ -185,6 +185,7 @@ export default function EventsPage() {
             {daysUntil === 0 ? "Hoje!" : daysUntil === 1 ? "Amanhã" : `${daysUntil} dias`}
           </p>
         </div>
+        {!isReadOnly && (
         <div className="flex items-center gap-1">
           <Switch checked={event.auto_notify} onCheckedChange={() => toggleNotify(event)} title="Notificação automática" />
           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEdit(event)}>
@@ -194,6 +195,7 @@ export default function EventsPage() {
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
+        )}
       </div>
     );
   };
