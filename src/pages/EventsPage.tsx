@@ -82,6 +82,7 @@ function getDaysUntil(dateStr: string): number {
 
 export default function EventsPage() {
   const { user } = useAuth();
+  const { isReadOnly } = useReadOnly();
   const [events, setEvents] = useState<ImportantEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
