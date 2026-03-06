@@ -11,6 +11,7 @@ import { AgendaFormDialog } from "@/components/agenda/AgendaFormDialog";
 import { expandEvents } from "@/components/agenda/utils";
 import type { AgendaItem, CalendarEvent, CalendarView, FormState } from "@/components/agenda/types";
 import { emptyForm } from "@/components/agenda/types";
+import { useReadOnly } from "@/hooks/useReadOnly";
 
 export default function AgendaPage() {
   const { user } = useAuth();
