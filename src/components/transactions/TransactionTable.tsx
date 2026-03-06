@@ -356,7 +356,7 @@ export function TransactionTable({ readOnly = false }: { readOnly?: boolean }) {
         </Table>
       </div>
 
-      {editing && <TransactionForm editTransaction={editing} onClose={() => setEditing(null)} />}
+      {!readOnly && editing && <TransactionForm editTransaction={editing} onClose={() => setEditing(null)} />}
 
       <p className="text-xs text-muted-foreground mt-2">{filtered.length} lançamento(s)</p>
     </div>
