@@ -34,6 +34,7 @@ export default function PersonsManagePage() {
           <h1 className="text-xl font-bold tracking-tight">Pessoas</h1>
           <p className="text-sm text-muted-foreground">Gerencie as pessoas vinculadas aos lançamentos</p>
         </div>
+        {!isReadOnly && (
         <Dialog open={openAdd} onOpenChange={setOpenAdd}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-1"><Plus className="h-4 w-4" /> Nova Pessoa</Button>
@@ -49,6 +50,7 @@ export default function PersonsManagePage() {
             </div>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
