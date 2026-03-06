@@ -17,6 +17,7 @@ import { DynamicGoalForm } from "@/components/goals/DynamicGoalForm";
 import { useDynamicGoalProgress } from "@/hooks/useDynamicGoalProgress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { useReadOnly } from "@/hooks/useReadOnly";
 
 export default function GoalsPage() {
   const { user } = useAuth();
