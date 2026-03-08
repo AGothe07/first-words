@@ -66,6 +66,17 @@ export default function AgendaPage() {
     setLoading(false);
   }, [user]);
 
+  // Add holiday items based on visible range
+  const allItems = useMemo(() => {
+    const years = new Set<number>();
+    years.add(currentDate.getFullYear());
+    // Also include adjacent year if near boundary
+    if (currentDate.getMonth() === 0) years.add(currentDate.getFullYear() - 1);
+    if (currentDate.getMonth() === 11) years.add(currentDate.getFullYear() + 1);
+    const holidays = Array.from(years).flatMap(y => getHolidayAgendaItems(y)) as AgendaItem[];
+    return [...items, ...holidays];
+  }, [items, currentDate]);
+
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
   // Compute visible range and expanded events
