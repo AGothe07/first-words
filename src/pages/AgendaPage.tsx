@@ -9,6 +9,7 @@ import { MonthView } from "@/components/agenda/MonthView";
 import { TimeGrid } from "@/components/agenda/TimeGrid";
 import { AgendaFormDialog } from "@/components/agenda/AgendaFormDialog";
 import { expandEvents } from "@/components/agenda/utils";
+import { getHolidayAgendaItems } from "@/components/agenda/holidays";
 import type { AgendaItem, CalendarEvent, CalendarView, FormState } from "@/components/agenda/types";
 import { emptyForm } from "@/components/agenda/types";
 import { useReadOnly } from "@/hooks/useReadOnly";
@@ -65,6 +66,17 @@ export default function AgendaPage() {
     setLoading(false);
   }, [user]);
 
+  // Add holiday items based on visible range
+  const allItems = useMemo(() => {
+    const years = new Set<number>();
+    years.add(currentDate.getFullYear());
+    // Also include adjacent year if near boundary
+    if (currentDate.getMonth() === 0) years.add(currentDate.getFullYear() - 1);
+    if (currentDate.getMonth() === 11) years.add(currentDate.getFullYear() + 1);
+    const holidays = Array.from(years).flatMap(y => getHolidayAgendaItems(y)) as AgendaItem[];
+    return [...items, ...holidays];
+  }, [items, currentDate]);
+
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
   // Compute visible range and expanded events
@@ -79,7 +91,7 @@ export default function AgendaPage() {
     return { rangeStart: startOfDay(currentDate), rangeEnd: endOfDay(currentDate) };
   }, [currentDate, view]);
 
-  const events = useMemo(() => expandEvents(items, rangeStart, rangeEnd), [items, rangeStart, rangeEnd]);
+  const events = useMemo(() => expandEvents(allItems, rangeStart, rangeEnd), [allItems, rangeStart, rangeEnd]);
 
   // Days for time grid
   const gridDays = useMemo(() => {
@@ -108,6 +120,11 @@ export default function AgendaPage() {
 
   const openEdit = (ev: CalendarEvent) => {
     if (isReadOnly) return;
+    // Holiday events are read-only
+    if (ev.originalId.startsWith("holiday_")) {
+      toast({ title: "🇧🇷 Feriado Nacional", description: "Este é um feriado nacional e não pode ser editado." });
+      return;
+    }
     // Birthday events (from important_events) are read-only in agenda
     if (ev.originalId.startsWith("evt_")) {
       toast({ title: "🎂 Data Importante", description: "Edite este evento na página de Datas Importantes." });

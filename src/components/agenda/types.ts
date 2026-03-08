@@ -77,6 +77,7 @@ export const typeColors: Record<string, { bg: string; border: string; text: stri
   appointment: { bg: "bg-primary/15", border: "border-primary/40", text: "text-primary" },
   reminder: { bg: "bg-warning/15", border: "border-warning/40", text: "text-warning" },
   task: { bg: "bg-accent", border: "border-accent-foreground/20", text: "text-accent-foreground" },
+  holiday: { bg: "bg-green-500/15", border: "border-green-500/40", text: "text-green-700 dark:text-green-400" },
 };
 
 export const HOUR_HEIGHT = 64;
