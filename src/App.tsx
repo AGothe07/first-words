@@ -30,6 +30,7 @@ import ChangePasswordPage from "./pages/ChangePasswordPage";
 import SettingsPage from "./pages/SettingsPage";
 import RecurringTransactionsPage from "./pages/RecurringTransactionsPage";
 import BudgetPage from "./pages/BudgetPage";
+import FinancialScorePage from "./pages/FinancialScorePage";
 import PlansPage from "./pages/PlansPage";
 import StartTrialPage from "./pages/StartTrialPage";
 import SubscriptionSuccessPage from "./pages/SubscriptionSuccessPage";
