@@ -441,67 +441,43 @@ export type Database = {
         }
         Relationships: []
       }
-      families: {
+      family_invites: {
         Row: {
           created_at: string
-          created_by: string
+          email: string
+          expires_at: string
+          household_id: string
           id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      family_members: {
-        Row: {
-          created_at: string
-          family_id: string
-          id: string
-          invited_email: string | null
           role: string
           status: string
-          updated_at: string
-          user_id: string | null
+          token: string
         }
         Insert: {
           created_at?: string
-          family_id: string
+          email: string
+          expires_at?: string
+          household_id: string
           id?: string
-          invited_email?: string | null
           role?: string
           status?: string
-          updated_at?: string
-          user_id?: string | null
+          token?: string
         }
         Update: {
           created_at?: string
-          family_id?: string
+          email?: string
+          expires_at?: string
+          household_id?: string
           id?: string
-          invited_email?: string | null
           role?: string
           status?: string
-          updated_at?: string
-          user_id?: string | null
+          token?: string
         }
         Relationships: [
           {
-            foreignKeyName: "family_members_family_id_fkey"
-            columns: ["family_id"]
+            foreignKeyName: "family_invites_household_id_fkey"
+            columns: ["household_id"]
             isOneToOne: false
-            referencedRelation: "families"
+            referencedRelation: "households"
             referencedColumns: ["id"]
           },
         ]
@@ -622,6 +598,80 @@ export type Database = {
           unit?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      household_members: {
+        Row: {
+          household_id: string
+          id: string
+          joined_at: string
+          monthly_limit: number | null
+          permissions: Json
+          role: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          household_id: string
+          id?: string
+          joined_at?: string
+          monthly_limit?: number | null
+          permissions?: Json
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          household_id?: string
+          id?: string
+          joined_at?: string
+          monthly_limit?: number | null
+          permissions?: Json
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "household_members_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      households: {
+        Row: {
+          created_at: string
+          extra_member_price: number
+          id: string
+          name: string
+          owner_user_id: string
+          plan_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          extra_member_price?: number
+          id?: string
+          name?: string
+          owner_user_id: string
+          plan_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          extra_member_price?: number
+          id?: string
+          name?: string
+          owner_user_id?: string
+          plan_type?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1282,6 +1332,7 @@ export type Database = {
           category_id: string
           created_at: string
           date: string
+          household_id: string | null
           id: string
           installment_group_id: string | null
           installment_number: number | null
@@ -1301,6 +1352,7 @@ export type Database = {
           category_id: string
           created_at?: string
           date: string
+          household_id?: string | null
           id?: string
           installment_group_id?: string | null
           installment_number?: number | null
@@ -1320,6 +1372,7 @@ export type Database = {
           category_id?: string
           created_at?: string
           date?: string
+          household_id?: string | null
           id?: string
           installment_group_id?: string | null
           installment_number?: number | null
@@ -1346,6 +1399,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
             referencedColumns: ["id"]
           },
           {
@@ -1642,11 +1702,15 @@ export type Database = {
         Returns: Json
       }
       email_has_used_trial: { Args: { _email: string }; Returns: boolean }
-      get_family_summary: {
+      get_household_dashboard: {
         Args: { _month_end: string; _month_start: string; _user_id: string }
         Returns: Json
       }
-      get_user_family_id: { Args: { _user_id: string }; Returns: string }
+      get_household_role: {
+        Args: { _household_id: string; _user_id: string }
+        Returns: string
+      }
+      get_user_household_id: { Args: { _user_id: string }; Returns: string }
       has_role:
         | {
             Args: {
@@ -1663,8 +1727,8 @@ export type Database = {
             Returns: boolean
           }
       has_valid_access: { Args: { _user_id: string }; Returns: boolean }
-      is_family_member: {
-        Args: { _family_id: string; _user_id: string }
+      is_household_member: {
+        Args: { _household_id: string; _user_id: string }
         Returns: boolean
       }
       normalize_brazilian_phone: { Args: { input: string }; Returns: string }
