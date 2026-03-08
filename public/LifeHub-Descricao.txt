@@ -1,0 +1,205 @@
+================================================================================
+                            LIFEHUB - SEU AGENTE PESSOAL
+                         Descrição Completa do Sistema
+================================================================================
+
+O LifeHub é uma plataforma web completa de organização pessoal que centraliza
+finanças, agenda, metas, eventos importantes e inteligência artificial
+conversacional em um único lugar.
+
+================================================================================
+1. MÓDULO DE FINANÇAS
+================================================================================
+
+Dashboard Financeiro:
+- Visão geral com KPIs: receitas, despesas, saldo e variação percentual
+- Gráficos interativos: pizza por categoria, barras por pessoa, timeline de
+  gastos, saldo acumulado, ranking de categorias e subcategorias
+- Gráfico por dia da semana para identificar padrões de consumo
+- Filtros globais por período, tipo (receita/despesa), categoria, pessoa e
+  dimensões customizáveis
+- Seleção interativa nos gráficos para drill-down nos dados
+- Card de transações dinâmico que reflete os filtros aplicados
+
+Lançamentos (Transações):
+- Cadastro de receitas e despesas com data, valor, categoria, subcategoria,
+  pessoa responsável e observações
+- Suporte a parcelamento: criar múltiplas parcelas automaticamente
+- Dimensões opcionais: forma de pagamento, conta/cartão e projeto
+- Tabela completa com busca, filtros, ordenação e paginação
+- Edição e exclusão individual ou em lote
+
+Categorias e Subcategorias:
+- Cadastro de categorias separadas por tipo (receita/despesa)
+- Subcategorias vinculadas a cada categoria para detalhamento
+- Ativação/desativação sem perder histórico
+
+Pessoas:
+- Cadastro de pessoas vinculadas às transações
+- Permite acompanhar gastos e receitas por pessoa
+- Gráficos dedicados: distribuição por pessoa e timeline por pessoa
+
+Dimensões Customizáveis:
+- Formas de pagamento (Pix, cartão, dinheiro, etc.)
+- Contas / Cartões (conta corrente, poupança, cartão X, etc.)
+- Projetos (agrupar transações por projeto ou objetivo)
+- Cada dimensão pode ser ativada/desativada pelo usuário
+
+Patrimônio (Assets):
+- Registro de patrimônio por categoria (imóveis, investimentos, veículos, etc.)
+- Acompanhamento histórico com gráficos de evolução e distribuição
+- KPIs de patrimônio total e variação
+- Filtros por categoria e período
+
+Insights:
+- Painel com análises automáticas das finanças
+- Identificação de tendências, alertas e oportunidades
+
+Importação de Dados:
+- Importação via planilha (Excel/CSV) para carga inicial ou migração
+- Log de importações com status e detalhes de erros
+
+Timeline:
+- Visualização cronológica completa das transações
+
+================================================================================
+2. MÓDULO DE AGENDA
+================================================================================
+
+Calendário Pessoal:
+- Visualização por mês, semana e dia
+- Criação de compromissos com título, descrição, data/hora início e fim
+- Eventos de dia inteiro
+- Prioridade: baixa, média, alta
+- Tipos: tarefa, compromisso, lembrete
+- Cores personalizadas por evento
+
+Recorrência:
+- Eventos recorrentes: diário, semanal (com escolha de dias), mensal, anual
+- Intervalo customizável (ex: a cada 2 semanas)
+- Data de término da recorrência
+- Edição individual ou de toda a série
+
+Feriados Nacionais do Brasil:
+- Feriados fixos e móveis (Carnaval, Páscoa, Corpus Christi, etc.)
+- Exibidos automaticamente no calendário com visual diferenciado (verde, 🇧🇷)
+- Somente leitura — não podem ser editados ou excluídos
+
+Lembretes:
+- Configuração de lembrete antes do evento (minutos, horas ou dias)
+- Integração com notificações via WhatsApp
+
+================================================================================
+3. MÓDULO DE METAS
+================================================================================
+
+Metas Pessoais:
+- Criação de metas com título, descrição, valor alvo e data limite
+- Tipos de meta: financeira, pessoal, profissional, saúde, etc.
+- Progresso visual com barra de progresso e porcentagem
+- Prioridade: baixa, média, alta
+- Status: em andamento, concluída, pausada, cancelada
+
+Checkpoints:
+- Marcos intermediários dentro de cada meta
+- Data prevista e valor alvo por checkpoint
+- Marcação de conclusão individual
+
+Progresso Automático:
+- Metas financeiras podem ter progresso calculado automaticamente
+  a partir das transações (data source configurável)
+- Modo de progresso: manual ou automático
+
+================================================================================
+4. MÓDULO DE EVENTOS IMPORTANTES
+================================================================================
+
+Datas Especiais:
+- Cadastro de aniversários, datas comemorativas e eventos recorrentes
+- Vinculação com pessoa e telefone para contato
+- Evento recorrente anual automático
+
+Mensagens Automáticas:
+- Templates de mensagem personalizáveis
+- Envio automático via WhatsApp na data do evento
+- Configuração de horário de envio e antecedência (dias antes)
+
+Notificações:
+- Configurações granulares de notificação por tipo de evento
+- Log de notificações enviadas com status
+
+================================================================================
+5. IA CONVERSACIONAL
+================================================================================
+
+- Integração com inteligência artificial para interação por linguagem natural
+- Consultar saldos, transações e resumos financeiros por conversa
+- Registrar novas transações via comando de texto/voz
+- Token de acesso individual por usuário
+- Ativação/desativação pelo administrador
+
+================================================================================
+6. CONFIGURAÇÕES E PERSONALIZAÇÃO
+================================================================================
+
+Aparência:
+- Tema claro e escuro
+- Cor primária personalizável
+- Tamanho de fonte ajustável
+- Densidade do layout (compacto, normal, confortável)
+
+Preferências Financeiras:
+- Moeda padrão
+- Dia de início do mês financeiro
+- Formato de data
+- Pessoa padrão para transações
+
+Preferências de Agenda:
+- Visualização padrão (mês, semana, dia)
+- Duração padrão de eventos
+- Horário comercial (início/fim)
+
+Segurança:
+- Alteração de senha
+- Tempo máximo de sessão configurável
+
+Conta:
+- Nome de exibição
+- E-mail e telefone
+
+================================================================================
+7. ASSINATURA E PLANOS
+================================================================================
+
+Ciclo de Vida:
+- Trial gratuito de 3 dias com acesso total (requer confirmação de e-mail)
+- Planos: mensal e anual
+- Pagamento via Asaas (Pix, boleto, cartão)
+- Após vencimento: modo somente leitura (visualiza dados, não edita)
+- Acesso manual concedido por administrador quando necessário
+
+Banners Contextuais:
+- Contagem regressiva do trial
+- Alertas de renovação e vencimento
+- Link direto para gerenciamento da assinatura
+
+================================================================================
+8. ADMINISTRAÇÃO (PAINEL ADMIN)
+================================================================================
+
+- Gerenciamento de usuários (listar, buscar, conceder acesso manual)
+- Configurações globais do sistema
+- Webhooks configuráveis com campos personalizáveis
+- Segurança: logs de eventos e auditoria
+- Visível apenas para usuários com role "admin"
+
+================================================================================
+9. INTEGRAÇÕES
+================================================================================
+
+- Supabase: banco de dados, autenticação e funções serverless
+- Asaas: gateway de pagamento para assinaturas
+- WhatsApp: envio de notificações e mensagens automáticas via webhook
+- API Externa: endpoint para ingestão de transações por sistemas terceiros
+
+================================================================================
