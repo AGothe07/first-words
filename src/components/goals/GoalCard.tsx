@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { format, parseISO } from "date-fns";
-import { Pause, Play, Trash2, Trophy, Zap, Users, Globe, Pencil } from "lucide-react";
+import { format, parseISO, differenceInMonths, differenceInDays } from "date-fns";
+import { Pause, Play, Trash2, Trophy, Zap, Users, Globe, Pencil, Calculator } from "lucide-react";
 import { useState } from "react";
 import { useFinance } from "@/contexts/FinanceContext";
 
