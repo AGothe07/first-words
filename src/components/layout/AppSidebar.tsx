@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, ArrowLeftRight, Tags, UserCog, LogOut, FileUp,
   ShieldAlert, Bot, Landmark, Sliders, Lightbulb, CalendarDays,
-  Target, PartyPopper, ChevronRight, Wallet, Settings, CreditCard, RefreshCw, PiggyBank, Heart, HandCoins
+  Target, PartyPopper, ChevronRight, Wallet, Settings, CreditCard, RefreshCw, PiggyBank, Heart, HandCoins, Users
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
