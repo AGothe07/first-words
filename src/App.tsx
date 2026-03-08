@@ -30,6 +30,7 @@ import ChangePasswordPage from "./pages/ChangePasswordPage";
 import SettingsPage from "./pages/SettingsPage";
 import RecurringTransactionsPage from "./pages/RecurringTransactionsPage";
 import BudgetPage from "./pages/BudgetPage";
+import DebtsPage from "./pages/DebtsPage";
 import FinancialScorePage from "./pages/FinancialScorePage";
 import PlansPage from "./pages/PlansPage";
 import StartTrialPage from "./pages/StartTrialPage";
@@ -96,6 +97,7 @@ function AppRoutes() {
       <Route path="/import" element={<ProtectedWithSubscription><ImportPage /></ProtectedWithSubscription>} />
       <Route path="/recurring" element={<ProtectedWithSubscription><RecurringTransactionsPage /></ProtectedWithSubscription>} />
       <Route path="/budget" element={<ProtectedWithSubscription><BudgetPage /></ProtectedWithSubscription>} />
+      <Route path="/debts" element={<ProtectedWithSubscription><DebtsPage /></ProtectedWithSubscription>} />
       <Route path="/financial-score" element={<ProtectedWithSubscription><FinancialScorePage /></ProtectedWithSubscription>} />
       <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
       <Route path="/ai-settings" element={<ProtectedWithSubscription><AISettingsPage /></ProtectedWithSubscription>} />
