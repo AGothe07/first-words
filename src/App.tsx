@@ -29,6 +29,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import SettingsPage from "./pages/SettingsPage";
 import RecurringTransactionsPage from "./pages/RecurringTransactionsPage";
+import BudgetPage from "./pages/BudgetPage";
 import PlansPage from "./pages/PlansPage";
 import StartTrialPage from "./pages/StartTrialPage";
 import SubscriptionSuccessPage from "./pages/SubscriptionSuccessPage";
@@ -93,6 +94,7 @@ function AppRoutes() {
       <Route path="/persons-manage" element={<ProtectedWithSubscription><PersonsManagePage /></ProtectedWithSubscription>} />
       <Route path="/import" element={<ProtectedWithSubscription><ImportPage /></ProtectedWithSubscription>} />
       <Route path="/recurring" element={<ProtectedWithSubscription><RecurringTransactionsPage /></ProtectedWithSubscription>} />
+      <Route path="/budget" element={<ProtectedWithSubscription><BudgetPage /></ProtectedWithSubscription>} />
       <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
       <Route path="/ai-settings" element={<ProtectedWithSubscription><AISettingsPage /></ProtectedWithSubscription>} />
       <Route path="/dimensions" element={<ProtectedWithSubscription><DimensionsPage /></ProtectedWithSubscription>} />

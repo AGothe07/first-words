@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { format, parseISO } from "date-fns";
-import { Pause, Play, Trash2, Trophy, Zap, Users, Globe, Pencil } from "lucide-react";
+import { format, parseISO, differenceInMonths, differenceInDays } from "date-fns";
+import { Pause, Play, Trash2, Trophy, Zap, Users, Globe, Pencil, Calculator } from "lucide-react";
 import { useState } from "react";
 import { useFinance } from "@/contexts/FinanceContext";
 
@@ -202,6 +202,34 @@ export function GoalCard({ goal, onToggleStatus, onDelete, onUpdateProgress, onE
                 ⚡ Atualizado automaticamente
               </p>
             )}
+            {/* Smart projection: how much to save per month */}
+            {goal.status === "active" && goal.target_value != null && goal.target_date && (goal.current_value || 0) < goal.target_value && (() => {
+              const remainingValue = goal.target_value - (goal.current_value || 0);
+              const today = new Date();
+              const targetDate = parseISO(goal.target_date);
+              const monthsLeft = Math.max(1, differenceInMonths(targetDate, today) + (differenceInDays(targetDate, today) % 30 > 0 ? 1 : 0));
+              const monthlyNeeded = remainingValue / monthsLeft;
+              return (
+                <div className="mt-2 rounded-lg bg-primary/5 border border-primary/15 p-2.5 space-y-1">
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-primary">
+                    <Calculator className="h-3 w-3" />
+                    Projeção Inteligente
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-muted-foreground">Falta:</span>
+                    <span className="font-medium">{formatValue(remainingValue)}</span>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-muted-foreground">Meses restantes:</span>
+                    <span className="font-medium">{monthsLeft}</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] pt-1 border-t border-primary/10">
+                    <span className="text-muted-foreground">Guardar por mês:</span>
+                    <span className="font-bold text-primary">{formatValue(monthlyNeeded)}</span>
+                  </div>
+                </div>
+              );
+            })()}
             {/* Detailed breakdown for "Valor Restante" mode */}
             {isRemainingMode && growthNeeded > 0 && (
               <div className="mt-2 rounded-lg bg-muted/50 p-2.5 space-y-1">
