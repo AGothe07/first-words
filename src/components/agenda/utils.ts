@@ -49,7 +49,7 @@ export function expandEvents(items: AgendaItem[], rangeStart: Date, rangeEnd: Da
 
     // Generate recurrence instances
     let cursor = new Date(origStart);
-    const maxIterations = 200;
+    const maxIterations = item.recurrence_type === "yearly" ? 500 : 200;
     let count = 0;
 
     while (count < maxIterations) {
