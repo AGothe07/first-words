@@ -357,6 +357,57 @@ export type Database = {
         }
         Relationships: []
       }
+      debts: {
+        Row: {
+          created_at: string
+          creditor: string
+          due_date: string | null
+          id: string
+          installments: number
+          installments_paid: number
+          interest_rate: number
+          notes: string | null
+          remaining_value: number
+          start_date: string
+          status: string
+          total_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          creditor: string
+          due_date?: string | null
+          id?: string
+          installments?: number
+          installments_paid?: number
+          interest_rate?: number
+          notes?: string | null
+          remaining_value: number
+          start_date?: string
+          status?: string
+          total_value: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          creditor?: string
+          due_date?: string | null
+          id?: string
+          installments?: number
+          installments_paid?: number
+          interest_rate?: number
+          notes?: string | null
+          remaining_value?: number
+          start_date?: string
+          status?: string
+          total_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       dimension_settings: {
         Row: {
           created_at: string | null
