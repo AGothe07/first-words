@@ -1,4 +1,4 @@
-import { parseISO, addDays, addWeeks, addMonths, startOfDay, isBefore, isAfter, isSameDay, getDay } from "date-fns";
+import { parseISO, addDays, addWeeks, addMonths, addYears, startOfDay, isBefore, isAfter, isSameDay, getDay } from "date-fns";
 import type { AgendaItem, CalendarEvent } from "./types";
 
 const weekdayMap: Record<string, number> = {
