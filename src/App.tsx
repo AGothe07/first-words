@@ -31,6 +31,7 @@ import SettingsPage from "./pages/SettingsPage";
 import RecurringTransactionsPage from "./pages/RecurringTransactionsPage";
 import BudgetPage from "./pages/BudgetPage";
 import DebtsPage from "./pages/DebtsPage";
+import FamilyPage from "./pages/FamilyPage";
 import FinancialScorePage from "./pages/FinancialScorePage";
 import PlansPage from "./pages/PlansPage";
 import StartTrialPage from "./pages/StartTrialPage";
