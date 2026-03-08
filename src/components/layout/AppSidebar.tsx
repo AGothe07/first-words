@@ -36,6 +36,7 @@ const modules: ModuleConfig[] = [
       { title: "Patrimônio", url: "/assets", icon: Landmark },
       { title: "Lançamentos", url: "/transactions", icon: ArrowLeftRight },
       { title: "Recorrentes", url: "/recurring", icon: RefreshCw },
+      { title: "Orçamento", url: "/budget", icon: PiggyBank },
     ],
     subItems: [
       { title: "Categorias", url: "/categories", icon: Tags },
