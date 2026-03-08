@@ -441,71 +441,6 @@ export type Database = {
         }
         Relationships: []
       }
-      families: {
-        Row: {
-          created_at: string
-          created_by: string
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      family_members: {
-        Row: {
-          created_at: string
-          family_id: string
-          id: string
-          invited_email: string | null
-          role: string
-          status: string
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          family_id: string
-          id?: string
-          invited_email?: string | null
-          role?: string
-          status?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          family_id?: string
-          id?: string
-          invited_email?: string | null
-          role?: string
-          status?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "family_members_family_id_fkey"
-            columns: ["family_id"]
-            isOneToOne: false
-            referencedRelation: "families"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       goal_checkpoints: {
         Row: {
           completed_at: string | null
@@ -1642,11 +1577,6 @@ export type Database = {
         Returns: Json
       }
       email_has_used_trial: { Args: { _email: string }; Returns: boolean }
-      get_family_summary: {
-        Args: { _month_end: string; _month_start: string; _user_id: string }
-        Returns: Json
-      }
-      get_user_family_id: { Args: { _user_id: string }; Returns: string }
       has_role:
         | {
             Args: {
@@ -1663,10 +1593,6 @@ export type Database = {
             Returns: boolean
           }
       has_valid_access: { Args: { _user_id: string }; Returns: boolean }
-      is_family_member: {
-        Args: { _family_id: string; _user_id: string }
-        Returns: boolean
-      }
       normalize_brazilian_phone: { Args: { input: string }; Returns: string }
       rebuild_financial_snapshot: {
         Args: { p_user_id: string }
