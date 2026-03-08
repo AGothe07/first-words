@@ -91,7 +91,7 @@ export default function AgendaPage() {
     return { rangeStart: startOfDay(currentDate), rangeEnd: endOfDay(currentDate) };
   }, [currentDate, view]);
 
-  const events = useMemo(() => expandEvents(items, rangeStart, rangeEnd), [items, rangeStart, rangeEnd]);
+  const events = useMemo(() => expandEvents(allItems, rangeStart, rangeEnd), [allItems, rangeStart, rangeEnd]);
 
   // Days for time grid
   const gridDays = useMemo(() => {
