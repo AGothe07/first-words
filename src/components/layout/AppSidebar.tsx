@@ -38,6 +38,7 @@ const modules: ModuleConfig[] = [
       { title: "Lançamentos", url: "/transactions", icon: ArrowLeftRight },
       { title: "Recorrentes", url: "/recurring", icon: RefreshCw },
       { title: "Orçamento", url: "/budget", icon: PiggyBank },
+      { title: "Dívidas", url: "/debts", icon: HandCoins },
     ],
     subItems: [
       { title: "Categorias", url: "/categories", icon: Tags },
