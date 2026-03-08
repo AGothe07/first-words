@@ -9,6 +9,7 @@ import { MonthView } from "@/components/agenda/MonthView";
 import { TimeGrid } from "@/components/agenda/TimeGrid";
 import { AgendaFormDialog } from "@/components/agenda/AgendaFormDialog";
 import { expandEvents } from "@/components/agenda/utils";
+import { getHolidayAgendaItems } from "@/components/agenda/holidays";
 import type { AgendaItem, CalendarEvent, CalendarView, FormState } from "@/components/agenda/types";
 import { emptyForm } from "@/components/agenda/types";
 import { useReadOnly } from "@/hooks/useReadOnly";
