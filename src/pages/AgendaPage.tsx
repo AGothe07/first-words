@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { toast } from "@/hooks/use-toast";
-import { parseISO, setHours, setMinutes, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays, setYear, isBefore } from "date-fns";
+import { parseISO, setHours, setMinutes, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays } from "date-fns";
 import { CalendarHeader } from "@/components/agenda/CalendarHeader";
 import { MonthView } from "@/components/agenda/MonthView";
 import { TimeGrid } from "@/components/agenda/TimeGrid";

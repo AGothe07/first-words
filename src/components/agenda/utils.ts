@@ -58,6 +58,8 @@ export function expandEvents(items: AgendaItem[], rangeStart: Date, rangeEnd: Da
         cursor = addWeeks(cursor, 1);
       } else if (item.recurrence_type === "monthly") {
         cursor = addMonths(cursor, 1);
+      } else if (item.recurrence_type === "yearly") {
+        cursor = addYears(cursor, 1);
       } else if (item.recurrence_type === "every_x_days") {
         cursor = addDays(cursor, item.recurrence_interval || 1);
       } else if (item.recurrence_type === "specific_weekdays") {
