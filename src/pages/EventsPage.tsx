@@ -119,6 +119,47 @@ export default function EventsPage() {
     setDialogOpen(true);
   };
 
+  const syncToAgenda = async (eventId: string, eventPayload: typeof form) => {
+    if (!user) return;
+    const eventDate = parseISO(eventPayload.event_date);
+    const startDate = new Date(eventDate);
+    startDate.setHours(9, 0, 0, 0);
+    const endDate = new Date(eventDate);
+    endDate.setHours(10, 0, 0, 0);
+
+    const agendaPayload = {
+      user_id: user.id,
+      title: `🎂 ${eventPayload.title}`,
+      description: eventPayload.notes || null,
+      item_type: "reminder" as const,
+      start_date: startDate.toISOString(),
+      end_date: endDate.toISOString(),
+      all_day: true,
+      priority: "medium",
+      auto_notify: eventPayload.auto_notify,
+      phone: eventPayload.phone || null,
+      recurrence_type: eventPayload.is_recurring ? "monthly" : "none",
+      // yearly = monthly with interval 12
+      recurrence_interval: eventPayload.is_recurring ? 12 : 1,
+      recurrence: eventPayload.is_recurring ? "monthly" : "none",
+      color: "#f59e0b",
+    };
+
+    // Check if agenda item already linked (by matching title pattern + source date)
+    const { data: existing } = await supabase
+      .from("agenda_items")
+      .select("id")
+      .eq("user_id", user.id)
+      .like("title", `🎂 %`)
+      .eq("start_date", startDate.toISOString());
+
+    if (editingEvent && existing && existing.length > 0) {
+      await supabase.from("agenda_items").update(agendaPayload).eq("id", existing[0].id);
+    } else {
+      await supabase.from("agenda_items").insert(agendaPayload);
+    }
+  };
+
   const handleSave = async () => {
     if (!user || !form.title.trim() || !form.event_date) return;
     const payload = {
@@ -133,15 +174,25 @@ export default function EventsPage() {
       auto_notify: form.auto_notify,
     };
 
+    let savedEventId: string | null = null;
+
     if (editingEvent) {
       const { error } = await supabase.from("important_events").update(payload).eq("id", editingEvent.id);
       if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+      savedEventId = editingEvent.id;
       toast({ title: "Evento atualizado!" });
     } else {
-      const { error } = await supabase.from("important_events").insert(payload);
+      const { data, error } = await supabase.from("important_events").insert(payload).select("id").single();
       if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+      savedEventId = data.id;
       toast({ title: "Evento adicionado!" });
     }
+
+    // Sync to agenda calendar
+    if (savedEventId) {
+      await syncToAgenda(savedEventId, form);
+    }
+
     setForm(emptyForm);
     setEditingEvent(null);
     setDialogOpen(false);
