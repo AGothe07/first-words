@@ -96,6 +96,7 @@ function AppRoutes() {
       <Route path="/import" element={<ProtectedWithSubscription><ImportPage /></ProtectedWithSubscription>} />
       <Route path="/recurring" element={<ProtectedWithSubscription><RecurringTransactionsPage /></ProtectedWithSubscription>} />
       <Route path="/budget" element={<ProtectedWithSubscription><BudgetPage /></ProtectedWithSubscription>} />
+      <Route path="/financial-score" element={<ProtectedWithSubscription><FinancialScorePage /></ProtectedWithSubscription>} />
       <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
       <Route path="/ai-settings" element={<ProtectedWithSubscription><AISettingsPage /></ProtectedWithSubscription>} />
       <Route path="/dimensions" element={<ProtectedWithSubscription><DimensionsPage /></ProtectedWithSubscription>} />
