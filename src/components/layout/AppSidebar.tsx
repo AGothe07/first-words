@@ -58,6 +58,11 @@ const modules: ModuleConfig[] = [
     mainItems: [{ title: "Minhas Metas", url: "/goals", icon: Target }],
   },
   {
+    label: "Família",
+    icon: Users,
+    mainItems: [{ title: "Modo Família", url: "/family", icon: Users }],
+  },
+  {
     label: "Eventos",
     icon: PartyPopper,
     mainItems: [
