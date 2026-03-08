@@ -200,6 +200,17 @@ export default function EventsPage() {
   };
 
   const deleteEvent = async (id: string) => {
+    const event = events.find(e => e.id === id);
+    if (event) {
+      // Remove linked agenda item
+      const eventDate = parseISO(event.event_date);
+      const startDate = new Date(eventDate);
+      startDate.setHours(9, 0, 0, 0);
+      await supabase.from("agenda_items").delete()
+        .eq("user_id", user!.id)
+        .like("title", `🎂 ${event.title}`)
+        .eq("start_date", startDate.toISOString());
+    }
     await supabase.from("important_events").delete().eq("id", id);
     fetchEvents();
   };
