@@ -33,6 +33,7 @@ const modules: ModuleConfig[] = [
     mainItems: [
       { title: "Dashboard", url: "/", icon: LayoutDashboard },
       { title: "Insights", url: "/insights", icon: Lightbulb },
+      { title: "Saúde Financeira", url: "/financial-score", icon: Heart },
       { title: "Patrimônio", url: "/assets", icon: Landmark },
       { title: "Lançamentos", url: "/transactions", icon: ArrowLeftRight },
       { title: "Recorrentes", url: "/recurring", icon: RefreshCw },
