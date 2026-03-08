@@ -26,12 +26,49 @@ export default function AgendaPage() {
 
   const fetchItems = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("agenda_items")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("start_date", { ascending: true });
-    setItems((data as AgendaItem[]) || []);
+    const [agendaRes, eventsRes] = await Promise.all([
+      supabase.from("agenda_items").select("*").eq("user_id", user.id).order("start_date", { ascending: true }),
+      supabase.from("important_events").select("*").eq("user_id", user.id),
+    ]);
+
+    const agendaItems = (agendaRes.data as AgendaItem[]) || [];
+
+    // Convert important_events (birthdays etc.) to AgendaItem format
+    const today = startOfDay(new Date());
+    const birthdayItems: AgendaItem[] = ((eventsRes.data as any[]) || []).map((ev) => {
+      const eventDate = parseISO(ev.event_date);
+      // For recurring events, compute next occurrence this/next year
+      let nextDate = eventDate;
+      if (ev.is_recurring) {
+        const thisYear = setYear(eventDate, today.getFullYear());
+        nextDate = isBefore(thisYear, addDays(today, -30)) ? setYear(eventDate, today.getFullYear() + 1) : thisYear;
+      }
+      const start = new Date(nextDate);
+      start.setHours(9, 0, 0, 0);
+      const end = new Date(nextDate);
+      end.setHours(10, 0, 0, 0);
+
+      return {
+        id: `evt_${ev.id}`,
+        title: `🎂 ${ev.title}`,
+        description: ev.notes || null,
+        item_type: "reminder",
+        start_date: start.toISOString(),
+        end_date: end.toISOString(),
+        all_day: true,
+        status: "pending",
+        priority: "medium",
+        color: "#f59e0b",
+        recurrence_type: ev.is_recurring ? "yearly" : "none",
+        recurrence_interval: null,
+        recurrence_weekdays: null,
+        auto_notify: ev.auto_notify || false,
+        reminder_unit: null,
+        reminder_value: null,
+      } as AgendaItem;
+    });
+
+    setItems([...agendaItems, ...birthdayItems]);
     setLoading(false);
   }, [user]);
 
