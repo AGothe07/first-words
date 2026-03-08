@@ -120,6 +120,11 @@ export default function AgendaPage() {
 
   const openEdit = (ev: CalendarEvent) => {
     if (isReadOnly) return;
+    // Holiday events are read-only
+    if (ev.originalId.startsWith("holiday_")) {
+      toast({ title: "🇧🇷 Feriado Nacional", description: "Este é um feriado nacional e não pode ser editado." });
+      return;
+    }
     // Birthday events (from important_events) are read-only in agenda
     if (ev.originalId.startsWith("evt_")) {
       toast({ title: "🎂 Data Importante", description: "Edite este evento na página de Datas Importantes." });
