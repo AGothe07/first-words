@@ -35,6 +35,7 @@ const modules: ModuleConfig[] = [
       { title: "Insights", url: "/insights", icon: Lightbulb },
       { title: "Patrimônio", url: "/assets", icon: Landmark },
       { title: "Lançamentos", url: "/transactions", icon: ArrowLeftRight },
+      { title: "Recorrentes", url: "/recurring", icon: RefreshCw },
     ],
     subItems: [
       { title: "Categorias", url: "/categories", icon: Tags },
