@@ -1,4 +1,4 @@
-import { parseISO, addDays, addWeeks, addMonths, startOfDay, isBefore, isAfter, isSameDay, getDay } from "date-fns";
+import { parseISO, addDays, addWeeks, addMonths, addYears, startOfDay, isBefore, isAfter, isSameDay, getDay } from "date-fns";
 import type { AgendaItem, CalendarEvent } from "./types";
 
 const weekdayMap: Record<string, number> = {
@@ -49,7 +49,7 @@ export function expandEvents(items: AgendaItem[], rangeStart: Date, rangeEnd: Da
 
     // Generate recurrence instances
     let cursor = new Date(origStart);
-    const maxIterations = 200;
+    const maxIterations = item.recurrence_type === "yearly" ? 500 : 200;
     let count = 0;
 
     while (count < maxIterations) {
@@ -58,6 +58,8 @@ export function expandEvents(items: AgendaItem[], rangeStart: Date, rangeEnd: Da
         cursor = addWeeks(cursor, 1);
       } else if (item.recurrence_type === "monthly") {
         cursor = addMonths(cursor, 1);
+      } else if (item.recurrence_type === "yearly") {
+        cursor = addYears(cursor, 1);
       } else if (item.recurrence_type === "every_x_days") {
         cursor = addDays(cursor, item.recurrence_interval || 1);
       } else if (item.recurrence_type === "specific_weekdays") {

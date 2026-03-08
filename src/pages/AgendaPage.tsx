@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { toast } from "@/hooks/use-toast";
-import { parseISO, setHours, setMinutes, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays, setYear, isBefore } from "date-fns";
+import { parseISO, setHours, setMinutes, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays } from "date-fns";
 import { CalendarHeader } from "@/components/agenda/CalendarHeader";
 import { MonthView } from "@/components/agenda/MonthView";
 import { TimeGrid } from "@/components/agenda/TimeGrid";
@@ -34,19 +34,12 @@ export default function AgendaPage() {
     const agendaItems = (agendaRes.data as AgendaItem[]) || [];
 
     // Convert important_events (birthdays etc.) to AgendaItem format
-    const today = startOfDay(new Date());
+    // Use the original event_date as start_date; expandEvents will handle yearly recurrence
     const birthdayItems: AgendaItem[] = ((eventsRes.data as any[]) || []).map((ev) => {
-      const eventDate = parseISO(ev.event_date);
-      // For recurring events, compute next occurrence this/next year
-      let nextDate = eventDate;
-      if (ev.is_recurring) {
-        const thisYear = setYear(eventDate, today.getFullYear());
-        nextDate = isBefore(thisYear, addDays(today, -30)) ? setYear(eventDate, today.getFullYear() + 1) : thisYear;
-      }
-      const start = new Date(nextDate);
-      start.setHours(9, 0, 0, 0);
-      const end = new Date(nextDate);
-      end.setHours(10, 0, 0, 0);
+      // Parse date components to avoid timezone shifts
+      const [year, month, day] = ev.event_date.split("-").map(Number);
+      const start = new Date(year, month - 1, day, 9, 0, 0, 0);
+      const end = new Date(year, month - 1, day, 10, 0, 0, 0);
 
       return {
         id: `evt_${ev.id}`,
@@ -60,7 +53,7 @@ export default function AgendaPage() {
         priority: "medium",
         color: "#f59e0b",
         recurrence_type: ev.is_recurring ? "yearly" : "none",
-        recurrence_interval: null,
+        recurrence_interval: 1,
         recurrence_weekdays: null,
         auto_notify: ev.auto_notify || false,
         reminder_unit: null,
