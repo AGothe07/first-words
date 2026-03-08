@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, ArrowLeftRight, Tags, UserCog, LogOut, FileUp,
   ShieldAlert, Bot, Landmark, Sliders, Lightbulb, CalendarDays,
-  Target, PartyPopper, ChevronRight, Wallet, Settings, CreditCard, RefreshCw, PiggyBank
+  Target, PartyPopper, ChevronRight, Wallet, Settings, CreditCard, RefreshCw, PiggyBank, Heart
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,6 +33,7 @@ const modules: ModuleConfig[] = [
     mainItems: [
       { title: "Dashboard", url: "/", icon: LayoutDashboard },
       { title: "Insights", url: "/insights", icon: Lightbulb },
+      { title: "Saúde Financeira", url: "/financial-score", icon: Heart },
       { title: "Patrimônio", url: "/assets", icon: Landmark },
       { title: "Lançamentos", url: "/transactions", icon: ArrowLeftRight },
       { title: "Recorrentes", url: "/recurring", icon: RefreshCw },
