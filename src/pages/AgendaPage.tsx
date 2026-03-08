@@ -115,6 +115,11 @@ export default function AgendaPage() {
 
   const openEdit = (ev: CalendarEvent) => {
     if (isReadOnly) return;
+    // Birthday events (from important_events) are read-only in agenda
+    if (ev.originalId.startsWith("evt_")) {
+      toast({ title: "🎂 Data Importante", description: "Edite este evento na página de Datas Importantes." });
+      return;
+    }
     const item = items.find(i => i.id === ev.originalId);
     if (!item) return;
     setEditingItem(item);
