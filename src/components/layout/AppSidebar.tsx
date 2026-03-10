@@ -186,8 +186,21 @@ export function AppSidebar() {
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { isAdmin } = useUserRole();
+  const { familyModeEnabled } = useFamilyMode();
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollPosRef = useRef(0);
+
+  // Build modules list based on family mode
+  const modules = useMemo(() => {
+    const mods = [...baseModules];
+    if (familyModeEnabled) {
+      // Insert family before "Eventos"
+      const eventsIdx = mods.findIndex(m => m.label === "Eventos");
+      if (eventsIdx >= 0) mods.splice(eventsIdx, 0, familyModule);
+      else mods.push(familyModule);
+    }
+    return mods;
+  }, [familyModeEnabled]);
 
   // Toggle accordion: click open module → close it; click different → switch
   const [openModule, setOpenModule] = useState<string | null>(() => {
