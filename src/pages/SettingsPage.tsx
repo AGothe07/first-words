@@ -87,6 +87,9 @@ export default function SettingsPage() {
           <TabsContent value="security" className="mt-4">
             <SecuritySection preferences={preferences} onUpdate={updatePreferences} />
           </TabsContent>
+          <TabsContent value="family" className="mt-4">
+            <FamilyModeSection preferences={preferences} onUpdate={updatePreferences} />
+          </TabsContent>
           <TabsContent value="advanced" className="mt-4">
             <AdvancedSection preferences={preferences} onUpdate={updatePreferences} />
           </TabsContent>
