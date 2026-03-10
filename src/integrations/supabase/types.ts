@@ -1506,6 +1506,7 @@ export type Database = {
           default_goal_unit: string | null
           default_person_id: string | null
           events_send_time: string | null
+          family_mode_enabled: boolean | null
           financial_month_start: number | null
           font_size: string | null
           goal_progress_mode: string | null
@@ -1531,6 +1532,7 @@ export type Database = {
           default_goal_unit?: string | null
           default_person_id?: string | null
           events_send_time?: string | null
+          family_mode_enabled?: boolean | null
           financial_month_start?: number | null
           font_size?: string | null
           goal_progress_mode?: string | null
@@ -1556,6 +1558,7 @@ export type Database = {
           default_goal_unit?: string | null
           default_person_id?: string | null
           events_send_time?: string | null
+          family_mode_enabled?: boolean | null
           financial_month_start?: number | null
           font_size?: string | null
           goal_progress_mode?: string | null

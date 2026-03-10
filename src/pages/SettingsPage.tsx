@@ -9,7 +9,8 @@ import { AgendaSection } from "@/components/settings/AgendaSection";
 import { AppearanceSection } from "@/components/settings/AppearanceSection";
 import { SecuritySection } from "@/components/settings/SecuritySection";
 import { AdvancedSection } from "@/components/settings/AdvancedSection";
-import { Settings, User, Bell, DollarSign, Target, CalendarDays, Palette, Shield, Settings2, Loader2 } from "lucide-react";
+import { FamilyModeSection } from "@/components/settings/FamilyModeSection";
+import { Settings, User, Bell, DollarSign, Target, CalendarDays, Palette, Shield, Settings2, Users, Loader2 } from "lucide-react";
 
 export default function SettingsPage() {
   const { preferences, loading, updatePreferences } = useUserPreferences();
@@ -57,6 +58,9 @@ export default function SettingsPage() {
             <TabsTrigger value="security" className="gap-1.5 text-xs">
               <Shield className="h-3.5 w-3.5" /> Segurança
             </TabsTrigger>
+            <TabsTrigger value="family" className="gap-1.5 text-xs">
+              <Users className="h-3.5 w-3.5" /> Família
+            </TabsTrigger>
             <TabsTrigger value="advanced" className="gap-1.5 text-xs">
               <Settings2 className="h-3.5 w-3.5" /> Avançado
             </TabsTrigger>
@@ -82,6 +86,9 @@ export default function SettingsPage() {
           </TabsContent>
           <TabsContent value="security" className="mt-4">
             <SecuritySection preferences={preferences} onUpdate={updatePreferences} />
+          </TabsContent>
+          <TabsContent value="family" className="mt-4">
+            <FamilyModeSection preferences={preferences} onUpdate={updatePreferences} />
           </TabsContent>
           <TabsContent value="advanced" className="mt-4">
             <AdvancedSection preferences={preferences} onUpdate={updatePreferences} />
