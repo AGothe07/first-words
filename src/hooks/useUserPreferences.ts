@@ -25,6 +25,7 @@ export interface UserPreferences {
   notifications_enabled: boolean;
   birthday_send_time: string;
   events_send_time: string;
+  family_mode_enabled: boolean;
 }
 
 const defaultPrefs = (userId: string): UserPreferences => ({
@@ -48,6 +49,7 @@ const defaultPrefs = (userId: string): UserPreferences => ({
   notifications_enabled: true,
   birthday_send_time: "09:00",
   events_send_time: "09:00",
+  family_mode_enabled: false,
 });
 
 export function useUserPreferences() {
@@ -76,7 +78,7 @@ export function useUserPreferences() {
         .single();
       setPreferences((inserted as any) || defaults);
     } else {
-      setPreferences(data as any);
+      setPreferences({ ...defaultPrefs(user.id), ...(data as any) });
     }
     setLoading(false);
   }, [user]);
