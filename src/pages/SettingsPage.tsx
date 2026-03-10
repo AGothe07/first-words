@@ -58,6 +58,9 @@ export default function SettingsPage() {
             <TabsTrigger value="security" className="gap-1.5 text-xs">
               <Shield className="h-3.5 w-3.5" /> Segurança
             </TabsTrigger>
+            <TabsTrigger value="family" className="gap-1.5 text-xs">
+              <Users className="h-3.5 w-3.5" /> Família
+            </TabsTrigger>
             <TabsTrigger value="advanced" className="gap-1.5 text-xs">
               <Settings2 className="h-3.5 w-3.5" /> Avançado
             </TabsTrigger>
