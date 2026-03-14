@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { FinanceProvider } from "@/contexts/FinanceContext";
 import { DimensionsProvider } from "@/contexts/DimensionsContext";
 import { AssetsProvider } from "@/contexts/AssetsContext";
+import { InvestmentsProvider } from "@/contexts/InvestmentsContext";
 import { HouseholdProvider } from "@/contexts/HouseholdContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { SubscriptionGuard } from "@/components/layout/SubscriptionGuard";
@@ -18,6 +19,7 @@ import ImportPage from "./pages/ImportPage";
 import AdminPage from "./pages/AdminPage";
 import AISettingsPage from "./pages/AISettingsPage";
 import AssetsPage from "./pages/AssetsPage";
+import InvestmentsPage from "./pages/InvestmentsPage";
 import DimensionsPage from "./pages/DimensionsPage";
 import InsightsPage from "./pages/InsightsPage";
 import AgendaPage from "./pages/AgendaPage";
@@ -106,6 +108,7 @@ function AppRoutes() {
       <Route path="/ai-settings" element={<ProtectedWithSubscription><AISettingsPage /></ProtectedWithSubscription>} />
       <Route path="/dimensions" element={<ProtectedWithSubscription><DimensionsPage /></ProtectedWithSubscription>} />
       <Route path="/assets" element={<ProtectedWithSubscription><AssetsPage /></ProtectedWithSubscription>} />
+      <Route path="/investments" element={<ProtectedWithSubscription><InvestmentsPage /></ProtectedWithSubscription>} />
       <Route path="/agenda" element={<ProtectedWithSubscription><AgendaPage /></ProtectedWithSubscription>} />
       <Route path="/goals" element={<ProtectedWithSubscription><GoalsPage /></ProtectedWithSubscription>} />
       <Route path="/events" element={<ProtectedWithSubscription><EventsPage /></ProtectedWithSubscription>} />
@@ -127,11 +130,13 @@ const App = () => (
           <FinanceProvider>
             <DimensionsProvider>
               <AssetsProvider>
-                <HouseholdProvider>
-                  <BrowserRouter>
-                    <AppRoutes />
-                  </BrowserRouter>
-                </HouseholdProvider>
+                <InvestmentsProvider>
+                  <HouseholdProvider>
+                    <BrowserRouter>
+                      <AppRoutes />
+                    </BrowserRouter>
+                  </HouseholdProvider>
+                </InvestmentsProvider>
               </AssetsProvider>
             </DimensionsProvider>
           </FinanceProvider>
