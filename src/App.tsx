@@ -130,11 +130,13 @@ const App = () => (
           <FinanceProvider>
             <DimensionsProvider>
               <AssetsProvider>
-                <HouseholdProvider>
-                  <BrowserRouter>
-                    <AppRoutes />
-                  </BrowserRouter>
-                </HouseholdProvider>
+                <InvestmentsProvider>
+                  <HouseholdProvider>
+                    <BrowserRouter>
+                      <AppRoutes />
+                    </BrowserRouter>
+                  </HouseholdProvider>
+                </InvestmentsProvider>
               </AssetsProvider>
             </DimensionsProvider>
           </FinanceProvider>

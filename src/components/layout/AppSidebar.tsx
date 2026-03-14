@@ -36,6 +36,7 @@ const baseModules: ModuleConfig[] = [
       { title: "Insights", url: "/insights", icon: Lightbulb },
       { title: "Saúde Financeira", url: "/financial-score", icon: Heart },
       { title: "Patrimônio", url: "/assets", icon: Landmark },
+      { title: "Investimentos", url: "/investments", icon: TrendingUp },
       { title: "Lançamentos", url: "/transactions", icon: ArrowLeftRight },
       { title: "Recorrentes", url: "/recurring", icon: RefreshCw },
       { title: "Orçamento", url: "/budget", icon: PiggyBank },
