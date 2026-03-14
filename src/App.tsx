@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { FinanceProvider } from "@/contexts/FinanceContext";
 import { DimensionsProvider } from "@/contexts/DimensionsContext";
 import { AssetsProvider } from "@/contexts/AssetsContext";
+import { InvestmentsProvider } from "@/contexts/InvestmentsContext";
 import { HouseholdProvider } from "@/contexts/HouseholdContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { SubscriptionGuard } from "@/components/layout/SubscriptionGuard";
