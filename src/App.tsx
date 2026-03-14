@@ -19,6 +19,7 @@ import ImportPage from "./pages/ImportPage";
 import AdminPage from "./pages/AdminPage";
 import AISettingsPage from "./pages/AISettingsPage";
 import AssetsPage from "./pages/AssetsPage";
+import InvestmentsPage from "./pages/InvestmentsPage";
 import DimensionsPage from "./pages/DimensionsPage";
 import InsightsPage from "./pages/InsightsPage";
 import AgendaPage from "./pages/AgendaPage";
