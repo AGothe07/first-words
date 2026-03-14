@@ -108,6 +108,7 @@ function AppRoutes() {
       <Route path="/ai-settings" element={<ProtectedWithSubscription><AISettingsPage /></ProtectedWithSubscription>} />
       <Route path="/dimensions" element={<ProtectedWithSubscription><DimensionsPage /></ProtectedWithSubscription>} />
       <Route path="/assets" element={<ProtectedWithSubscription><AssetsPage /></ProtectedWithSubscription>} />
+      <Route path="/investments" element={<ProtectedWithSubscription><InvestmentsPage /></ProtectedWithSubscription>} />
       <Route path="/agenda" element={<ProtectedWithSubscription><AgendaPage /></ProtectedWithSubscription>} />
       <Route path="/goals" element={<ProtectedWithSubscription><GoalsPage /></ProtectedWithSubscription>} />
       <Route path="/events" element={<ProtectedWithSubscription><EventsPage /></ProtectedWithSubscription>} />
