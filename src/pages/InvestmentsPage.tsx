@@ -1,12 +1,14 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InvestmentFormDialog } from "@/components/investments/InvestmentFormDialog";
+import { ImportInvestmentsDialog } from "@/components/investments/ImportInvestmentsDialog";
 import { InvestmentTable } from "@/components/investments/InvestmentTable";
 import { InvestmentFilters } from "@/components/investments/InvestmentFilters";
 import { InvestmentKPICards } from "@/components/investments/InvestmentKPICards";
 import { InvestmentDistributionChart } from "@/components/investments/InvestmentDistributionChart";
 import { InvestmentTimelineChart } from "@/components/investments/InvestmentTimelineChart";
 import { InvestmentRankingChart } from "@/components/investments/InvestmentRankingChart";
+import { InvestmentPnLChart } from "@/components/investments/InvestmentPnLChart";
 import { useReadOnly } from "@/hooks/useReadOnly";
 
 export default function InvestmentsPage() {
@@ -17,9 +19,14 @@ export default function InvestmentsPage() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-bold tracking-tight">Investimentos</h1>
-          <p className="text-sm text-muted-foreground">Controle de aportes e distribuição dos seus investimentos</p>
+          <p className="text-sm text-muted-foreground">Controle de compras, vendas, rendimentos e performance dos seus investimentos</p>
         </div>
-        {!isReadOnly && <InvestmentFormDialog />}
+        {!isReadOnly && (
+          <div className="flex gap-2">
+            <ImportInvestmentsDialog />
+            <InvestmentFormDialog />
+          </div>
+        )}
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
@@ -34,8 +41,9 @@ export default function InvestmentsPage() {
           <InvestmentTimelineChart />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <InvestmentDistributionChart />
-            <InvestmentRankingChart />
+            <InvestmentPnLChart />
           </div>
+          <InvestmentRankingChart />
         </TabsContent>
 
         <TabsContent value="records" className="space-y-4">

@@ -1,0 +1,31 @@
+export const colors = {
+  primary: "#0D9488",
+  primaryLight: "#14B8A6",
+  background: "#FFFFFF",
+  card: "#F8FAFC",
+  border: "#E2E8F0",
+  text: "#0F172A",
+  textSecondary: "#64748B",
+  textMuted: "#94A3B8",
+  success: "#10B981",
+  warning: "#F59E0B",
+  destructive: "#EF4444",
+  income: "#10B981",
+  expense: "#EF4444",
+};
+
+export const darkColors = {
+  primary: "#14B8A6",
+  primaryLight: "#2DD4BF",
+  background: "#0F172A",
+  card: "#1E293B",
+  border: "#334155",
+  text: "#F8FAFC",
+  textSecondary: "#94A3B8",
+  textMuted: "#64748B",
+  success: "#10B981",
+  warning: "#F59E0B",
+  destructive: "#EF4444",
+  income: "#10B981",
+  expense: "#EF4444",
+};

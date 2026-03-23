@@ -38,7 +38,7 @@ export function InvestmentFormDialog({ editInvestment, trigger, onClose }: Props
       } else {
         const id = await addInvestment({ name, type, notes: notes || null });
         if (id && initialAmount && Number(initialAmount) > 0) {
-          await addEntry({ investment_id: id, amount: Number(initialAmount), date: initialDate, notes: null });
+          await addEntry({ investment_id: id, amount: Number(initialAmount), date: initialDate, notes: null, entry_type: "buy", quantity: null });
         }
       }
       setOpen(false);

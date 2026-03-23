@@ -761,9 +761,11 @@ export type Database = {
           amount: number
           created_at: string
           date: string
+          entry_type: string
           id: string
           investment_id: string
           notes: string | null
+          quantity: number | null
           updated_at: string
           user_id: string
         }
@@ -771,9 +773,11 @@ export type Database = {
           amount: number
           created_at?: string
           date?: string
+          entry_type?: string
           id?: string
           investment_id: string
           notes?: string | null
+          quantity?: number | null
           updated_at?: string
           user_id: string
         }
@@ -781,9 +785,11 @@ export type Database = {
           amount?: number
           created_at?: string
           date?: string
+          entry_type?: string
           id?: string
           investment_id?: string
           notes?: string | null
+          quantity?: number | null
           updated_at?: string
           user_id?: string
         }

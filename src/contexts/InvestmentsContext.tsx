@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
-import { Investment, InvestmentEntry, InvestmentFilterState } from "@/types/investments";
+import { Investment, InvestmentEntry, InvestmentEntryType, InvestmentFilterState } from "@/types/investments";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -7,6 +7,10 @@ import { parseISO, isWithinInterval } from "date-fns";
 
 interface InvestmentWithStats extends Investment {
   total_invested: number;
+  total_sold: number;
+  total_dividends: number;
+  net_position: number;
+  realized_pnl: number;
   entry_count: number;
   last_entry_date: string | null;
 }
@@ -22,9 +26,10 @@ interface InvestmentsContextType {
   addInvestment: (inv: Pick<Investment, "name" | "type" | "notes">) => Promise<string | null>;
   updateInvestment: (inv: Pick<Investment, "id" | "name" | "type" | "notes">) => Promise<void>;
   deleteInvestment: (id: string) => Promise<void>;
-  addEntry: (entry: Pick<InvestmentEntry, "investment_id" | "amount" | "date" | "notes">) => Promise<void>;
-  updateEntry: (entry: Pick<InvestmentEntry, "id" | "amount" | "date" | "notes">) => Promise<void>;
+  addEntry: (entry: Pick<InvestmentEntry, "investment_id" | "amount" | "date" | "notes" | "entry_type" | "quantity">) => Promise<void>;
+  updateEntry: (entry: Pick<InvestmentEntry, "id" | "amount" | "date" | "notes" | "entry_type" | "quantity">) => Promise<void>;
   deleteEntry: (id: string) => Promise<void>;
+  bulkDeleteEntries: (ids: string[]) => Promise<void>;
   getEntriesForInvestment: (investmentId: string) => InvestmentEntry[];
   refreshData: () => Promise<void>;
 }
@@ -51,7 +56,7 @@ export function InvestmentsProvider({ children }: { children: React.ReactNode })
       if (invRes.error) throw invRes.error;
       if (entRes.error) throw entRes.error;
       setInvestments((invRes.data || []) as unknown as Investment[]);
-      setEntries((entRes.data || []).map(e => ({ ...e, amount: Number(e.amount) })) as unknown as InvestmentEntry[]);
+      setEntries((entRes.data || []).map(e => ({ ...e, amount: Number(e.amount), quantity: (e as any).quantity != null ? Number((e as any).quantity) : null, entry_type: (e as any).entry_type || "buy" })) as unknown as InvestmentEntry[]);
     } catch (err) {
       console.error("Failed to load investments:", err);
     }
@@ -63,11 +68,22 @@ export function InvestmentsProvider({ children }: { children: React.ReactNode })
   const investmentsWithStats = useMemo<InvestmentWithStats[]>(() => {
     return investments.map(inv => {
       const invEntries = entries.filter(e => e.investment_id === inv.id);
-      const total = invEntries.reduce((s, e) => s + e.amount, 0);
+      const buys = invEntries.filter(e => e.entry_type === "buy");
+      const sells = invEntries.filter(e => e.entry_type === "sell");
+      const dividends = invEntries.filter(e => e.entry_type === "dividend");
+
+      const totalBuy = buys.reduce((s, e) => s + e.amount, 0);
+      const totalSell = sells.reduce((s, e) => s + e.amount, 0);
+      const totalDiv = dividends.reduce((s, e) => s + e.amount, 0);
+
       const sorted = [...invEntries].sort((a, b) => b.date.localeCompare(a.date));
       return {
         ...inv,
-        total_invested: total,
+        total_invested: totalBuy,
+        total_sold: totalSell,
+        total_dividends: totalDiv,
+        net_position: totalBuy - totalSell,
+        realized_pnl: totalSell + totalDiv - totalBuy,
         entry_count: invEntries.length,
         last_entry_date: sorted[0]?.date ?? null,
       };
@@ -113,25 +129,34 @@ export function InvestmentsProvider({ children }: { children: React.ReactNode })
     await refreshData();
   }, [refreshData]);
 
-  const addEntry = useCallback(async (entry: Pick<InvestmentEntry, "investment_id" | "amount" | "date" | "notes">) => {
+  const addEntry = useCallback(async (entry: Pick<InvestmentEntry, "investment_id" | "amount" | "date" | "notes" | "entry_type" | "quantity">) => {
     if (!user) return;
     const { error } = await supabase.from("investment_entries").insert({ ...entry, user_id: user.id } as any);
     if (error) { toast.error("Erro: " + error.message); return; }
-    toast.success("Aporte registrado!");
+    const labels = { buy: "Compra", sell: "Venda", dividend: "Rendimento" };
+    toast.success(`${labels[entry.entry_type]} registrada!`);
     await refreshData();
   }, [user, refreshData]);
 
-  const updateEntry = useCallback(async (entry: Pick<InvestmentEntry, "id" | "amount" | "date" | "notes">) => {
-    const { error } = await supabase.from("investment_entries").update({ amount: entry.amount, date: entry.date, notes: entry.notes } as any).eq("id", entry.id);
+  const updateEntry = useCallback(async (entry: Pick<InvestmentEntry, "id" | "amount" | "date" | "notes" | "entry_type" | "quantity">) => {
+    const { error } = await supabase.from("investment_entries").update({ amount: entry.amount, date: entry.date, notes: entry.notes, entry_type: entry.entry_type, quantity: entry.quantity } as any).eq("id", entry.id);
     if (error) { toast.error("Erro: " + error.message); return; }
-    toast.success("Aporte atualizado!");
+    toast.success("Lançamento atualizado!");
     await refreshData();
   }, [refreshData]);
 
   const deleteEntry = useCallback(async (id: string) => {
     const { error } = await supabase.from("investment_entries").delete().eq("id", id);
     if (error) { toast.error("Erro: " + error.message); return; }
-    toast.success("Aporte excluído!");
+    toast.success("Lançamento excluído!");
+    await refreshData();
+  }, [refreshData]);
+
+  const bulkDeleteEntries = useCallback(async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const { error } = await supabase.from("investment_entries").delete().in("id", ids);
+    if (error) { toast.error("Erro: " + error.message); return; }
+    toast.success(`${ids.length} lançamentos excluídos!`);
     await refreshData();
   }, [refreshData]);
 
@@ -143,7 +168,7 @@ export function InvestmentsProvider({ children }: { children: React.ReactNode })
     <InvestmentsContext.Provider value={{
       investments, entries, investmentsWithStats, loading, filters, setFilters,
       filteredInvestments, addInvestment, updateInvestment, deleteInvestment,
-      addEntry, updateEntry, deleteEntry, getEntriesForInvestment, refreshData,
+      addEntry, updateEntry, deleteEntry, bulkDeleteEntries, getEntriesForInvestment, refreshData,
     }}>
       {children}
     </InvestmentsContext.Provider>

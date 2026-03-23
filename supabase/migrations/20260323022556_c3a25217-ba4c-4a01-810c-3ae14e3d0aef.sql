@@ -1,0 +1,1 @@
+ALTER TABLE public.investment_entries ADD COLUMN quantity numeric NULL DEFAULT NULL;

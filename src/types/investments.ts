@@ -9,15 +9,29 @@ export interface Investment {
   updated_at: string;
 }
 
+export type InvestmentEntryType = "buy" | "sell" | "dividend";
+
 export interface InvestmentEntry {
   id: string;
   user_id: string;
   investment_id: string;
   amount: number;
+  quantity: number | null;
   date: string;
+  entry_type: InvestmentEntryType;
   notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export const ENTRY_TYPE_LABELS: Record<InvestmentEntryType, string> = {
+  buy: "Compra",
+  sell: "Venda",
+  dividend: "Rendimento",
+};
+
+export function getEntryTypeLabel(type: InvestmentEntryType): string {
+  return ENTRY_TYPE_LABELS[type] ?? type;
 }
 
 export const INVESTMENT_TYPES = [
